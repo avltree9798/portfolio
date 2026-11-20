@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "anthony-viriya-portfolio",
+  "account_id": "1f5a65722773922bb659b5c86204c222",
+  "workers_dev": true,
+  "preview_urls": false,
+  "compatibility_date": "2026-11-20",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+  },
+}
