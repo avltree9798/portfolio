@@ -7,7 +7,9 @@ export interface Project {
   subtitle: string
   category: Exclude<Category, 'All work'>
   tags: string[]
-  artwork: 'terminal' | 'apple' | 'radar'
+  artwork:
+    'terminal' | 'apple' | 'radar' | 'database' | 'handheld' | 'dual-screen'
+  status?: 'Work in progress'
   detail: string
   outcome: string
   context: string
@@ -15,7 +17,7 @@ export interface Project {
 }
 
 // Content is the CMS. Edit this file in a pull request; merge to master to publish.
-// Career facts reflect Anthony's CV, last updated July 2026.
+// Career facts and project summaries are maintained alongside the generated CV.
 export const portfolio = {
   name: cv.name,
   handle: 'avltree9798',
@@ -48,7 +50,65 @@ export const portfolio = {
         'Logging processing time reduced from 2 hours to under 5 minutes.',
     },
     {
+      id: 'pyloquent',
+      title: 'Pyloquent',
+      subtitle: 'An expressive Python interface to the database.',
+      category: 'Open source',
+      tags: ['Python', 'Pydantic', 'Cloudflare D1'],
+      artwork: 'database',
+      context: 'Open-source Python library',
+      detail:
+        'An asynchronous ORM inspired by Laravel Eloquent, bringing Pydantic models, relationships, query building and migrations together. Includes drivers for SQLite, PostgreSQL, MySQL and Cloudflare D1.',
+      outcome:
+        'Tests cover pooled transaction isolation and connection routing, alongside model operations and database relationships.',
+      url: 'https://github.com/avltree9798/pyloquent',
+    },
+    {
+      id: 'dylib-hijack-scanner',
+      title: 'dylib_hijack_scanner',
+      subtitle: 'Following the paths a macOS library loader takes.',
+      category: 'Open source',
+      tags: ['Python', 'Mach-O', 'macOS security'],
+      artwork: 'radar',
+      context: 'Open-source security research tool',
+      detail:
+        'A Python scanner that examines Mach-O dependencies and library search paths to identify missing library candidates. Exports findings as JSON for further investigation.',
+      outcome:
+        'Makes potential dynamic library hijack opportunities easier to investigate. Findings are candidates for review, rather than proof of exploitability.',
+      url: 'https://github.com/avltree9798/dylib_hijack_scanner',
+    },
+    {
+      id: 'gmboy',
+      title: 'gmboy',
+      subtitle: 'Learning systems engineering, one instruction at a time.',
+      category: 'Open source',
+      tags: ['C', 'SDL2', 'Emulation'],
+      artwork: 'handheld',
+      context: 'Educational Game Boy emulator',
+      detail:
+        'A Game Boy emulator written in C with SDL2, exploring how CPU instruction execution, memory mapping, graphics, timers, audio and input work together. The accompanying blog series introduces these systems to software engineers.',
+      outcome:
+        'A practical route into systems engineering, with implementation trade-offs and current limitations explained in the article series.',
+      url: 'https://github.com/avltree9798/gmboy',
+    },
+    {
+      id: 'clamshell',
+      title: 'Clamshell',
+      subtitle: 'Two screens. A deeper dive into Nintendo hardware.',
+      category: 'Open source',
+      tags: ['Swift', 'SwiftUI', 'ARM'],
+      artwork: 'dual-screen',
+      status: 'Work in progress',
+      context: 'Experimental Nintendo DS and 3DS emulator',
+      detail:
+        'An emulator project combining ARM interpretation and console hardware modelling with a SwiftUI interface for iPhone and iPad. The architecture separates the emulator cores from presentation, audio and input.',
+      outcome:
+        'Synthetic ROM and subsystem tests exercise CPU and hardware behaviour. Compatibility remains under development.',
+      url: 'https://github.com/avltree9798/clamshell',
+    },
+    {
       id: 'isjailbroken',
+      url: 'https://github.com/avltree9798/isJailbroken',
       title: 'isJailbroken',
       subtitle: 'A closer look beneath the surface of iOS.',
       category: 'Open source',
@@ -62,6 +122,7 @@ export const portfolio = {
     },
     {
       id: 'watcher',
+      url: 'https://github.com/avltree9798/watcher',
       title: 'watcher',
       subtitle: 'Making the invisible visible on macOS.',
       category: 'Open source',
@@ -78,7 +139,7 @@ export const portfolio = {
     {
       company: 'Cloudflare',
       role: 'Security Engineer',
-      period: 'Feb 2024 — present',
+      period: 'Feb 2024 to present',
       summary:
         'Security delivery and automation. Building controls across endpoints, cloud infrastructure and incident response.',
       accent: 'coral',
@@ -86,7 +147,7 @@ export const portfolio = {
     {
       company: 'Yelp',
       role: 'Senior Security Incident & Detection Engineer',
-      period: 'Nov 2021 — Feb 2024',
+      period: 'Nov 2021 to Feb 2024',
       summary:
         'Apple platform security, automated malware analysis and detection engineering.',
       accent: 'rose',
@@ -94,7 +155,7 @@ export const portfolio = {
     {
       company: 'Gopay',
       role: 'Senior Product Security Engineer',
-      period: 'Feb 2021 — Aug 2021',
+      period: 'Feb 2021 to Aug 2021',
       summary:
         'iOS application security, secure development workflows and bug bounty ownership.',
       accent: 'mint',
@@ -102,7 +163,7 @@ export const portfolio = {
     {
       company: 'ITSEC Asia',
       role: 'Penetration Tester Consultant',
-      period: 'Jan 2019 — Jan 2021',
+      period: 'Jan 2019 to Jan 2021',
       summary:
         'Mobile application assessments, vulnerability research and API security testing.',
       accent: 'blue',

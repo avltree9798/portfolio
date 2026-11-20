@@ -38,7 +38,7 @@ for (const layout of layouts) {
       )
     }
     const cards = page.locator('[data-project]')
-    await expect(cards).toHaveCount(3)
+    await expect(cards).toHaveCount(7)
     if (layout.width <= 580) {
       await page.getByRole('button', { name: 'Menu', exact: true }).click()
       await expect(page.getByRole('navigation')).toBeVisible()
@@ -51,7 +51,7 @@ for (const layout of layouts) {
       ).toHaveAttribute('aria-expanded', 'false')
     }
     await page.getByRole('button', { name: 'Open source', exact: true }).click()
-    await expect(cards).toHaveCount(2)
+    await expect(cards).toHaveCount(6)
     await page.getByRole('button', { name: 'All work', exact: true }).click()
     const explore = page
       .locator('[data-project="security-automation"]')

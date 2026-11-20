@@ -25,17 +25,50 @@ defineEmits<{ inspect: [project: Project] }>()
         ><span class="phone-label">SYSTEM INTEGRITY</span
         ><span class="phone-check">[ verified ]</span>
       </div>
+      <div v-else-if="project.artwork === 'database'" class="schema-art">
+        <div><strong>MODEL</strong><span>id · relationships</span></div>
+        <span class="schema-connector">↓ async query ↓</span>
+        <div>
+          <strong>DATABASE</strong><span>SQLite · PostgreSQL · D1</span>
+        </div>
+      </div>
+      <div
+        v-else-if="
+          project.artwork === 'handheld' || project.artwork === 'dual-screen'
+        "
+        class="console-art"
+        :class="{ dual: project.artwork === 'dual-screen' }"
+      >
+        <div class="console-screen">
+          <span>▟ ▙ ▟</span
+          ><small>{{
+            project.artwork === 'handheld' ? '160 × 144' : 'ARM9 + ARM7'
+          }}</small>
+        </div>
+        <div class="console-controls">
+          <b>✚</b
+          ><span v-if="project.artwork === 'dual-screen'" class="touch-screen"
+            >touch</span
+          ><span>● ●</span>
+        </div>
+      </div>
       <div v-else class="radar-scope"><span></span><i></i><b></b><em></em></div>
       <span class="art-caption">{{
-        project.artwork === 'terminal'
-          ? 'AUTOMATE THE BORING. SECURE THE REST.'
-          : project.artwork === 'apple'
-            ? 'TRUST, BUT VERIFY.'
-            : 'OBSERVE. UNDERSTAND. DEFEND.'
+        {
+          terminal: 'AUTOMATE THE BORING. SECURE THE REST.',
+          apple: 'TRUST, BUT VERIFY.',
+          radar: 'OBSERVE. UNDERSTAND. DEFEND.',
+          database: 'MODELS. QUERIES. RELATIONSHIPS.',
+          handheld: 'ONE INSTRUCTION AT A TIME.',
+          'dual-screen': 'TWO SCREENS. MANY MOVING PARTS.',
+        }[project.artwork]
       }}</span>
     </div>
     <div class="project-body">
-      <p class="eyebrow">{{ project.category }}</p>
+      <p class="eyebrow">
+        {{ project.category
+        }}<span v-if="project.status"> · {{ project.status }}</span>
+      </p>
       <h3>{{ project.title }}</h3>
       <p>{{ project.subtitle }}</p>
       <div class="tags">

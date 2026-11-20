@@ -78,7 +78,7 @@ function closeProject() {
         </h1>
         <p class="hero-description">
           Hey, I’m {{ portfolio.name }}.<br />I build things that keep people
-          safe — from the<br class="desktop-break" />
+          safe, from the<br class="desktop-break" />
           devices in their hands to the systems behind them.
         </p>
         <div class="hero-actions">
@@ -192,9 +192,8 @@ function closeProject() {
         </h2>
         <p>
           I’m a London-based security engineer who enjoys understanding how
-          things work — and what happens when they don’t. My work brings
-          together Apple platform security, offensive research and thoughtful
-          automation.
+          things work, and what happens when they don’t. My work brings together
+          Apple platform security, offensive research and thoughtful automation.
         </p>
         <p>
           Away from the terminal, I’m an avgeek with a soft spot for Japan,

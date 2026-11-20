@@ -1,7 +1,7 @@
 {
   "name": "Anthony Viriya",
   "role": "Security Engineer",
-  "updated": "July 2026",
+  "updated": "November 2026",
   "location": "London, England, United Kingdom",
   "email": "me@avltree9798.co.uk",
   "phone": "07472 540095",
@@ -90,6 +90,34 @@
       "description": "Open-source implementation of Apple’s Endpoint Security Framework for monitoring and controlling system events on macOS.",
       "bullets": [
         "Provides real-time monitoring of file access, and process execution."
+      ]
+    },
+    {
+      "name": "Pyloquent",
+      "description": "Asynchronous Python ORM with Pydantic integration, database migrations and Cloudflare D1 support.",
+      "bullets": [
+        "Implemented database relationships and query building, with tests covering pooled transaction isolation and connection routing."
+      ]
+    },
+    {
+      "name": "dylib_hijack_scanner",
+      "description": "Python tool for identifying potential macOS dynamic library hijack opportunities.",
+      "bullets": [
+        "Analyses Mach-O dependencies and library search paths, flags missing library candidates and exports JSON reports."
+      ]
+    },
+    {
+      "name": "gmboy",
+      "description": "Educational Game Boy emulator written in C with SDL2.",
+      "bullets": [
+        "Implemented CPU instruction execution, memory mapping, graphics, timers and audio; documented the architecture in a systems engineering article series."
+      ]
+    },
+    {
+      "name": "Clamshell (work in progress)",
+      "description": "Experimental Nintendo DS and 3DS emulator written in Swift, with a SwiftUI interface.",
+      "bullets": [
+        "Developing ARM interpretation and console hardware modelling, with synthetic ROM and subsystem tests."
       ]
     }
   ],

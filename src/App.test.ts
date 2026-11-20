@@ -24,7 +24,7 @@ describe('portfolio visitor journeys', () => {
       .findAll('button')
       .find((button) => button.text() === 'Open source')!
     await filter.trigger('click')
-    expect(page.findAll('[data-project]')).toHaveLength(2)
+    expect(page.findAll('[data-project]')).toHaveLength(6)
     expect(page.text()).toContain('isJailbroken')
     expect(page.find('[data-project="security-automation"]').exists()).toBe(
       false,
