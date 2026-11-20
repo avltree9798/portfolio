@@ -31,7 +31,7 @@ jobs:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    environment: production
+    environment: Prod
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

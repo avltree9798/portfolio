@@ -27,7 +27,7 @@ For layout and introductory copy, edit `src/App.vue`; for artwork, edit `src/com
 
 This folder is an independent Git repository connected to `avltree9798/portfolio` on the `master` branch.
 
-1. In GitHub, create a `production` environment and add `CLOUDFLARE_API_TOKEN` as an environment secret. The non-secret account ID is declared in `wrangler.jsonc`. Use a scoped Workers deployment token for the intended Cloudflare account; never use a global API key or a `VITE_` environment variable for credentials.
+1. In GitHub, create a `Prod` environment and add `CLOUDFLARE_API_TOKEN` as an environment secret. The non-secret account ID is declared in `wrangler.jsonc`. Use a scoped Workers deployment token for the intended Cloudflare account; never use a global API key or a `VITE_` environment variable for credentials.
 2. Require the `check` status on `master` and enable pull request review protection in GitHub settings. These account settings are not applied by the source files.
 3. Review `wrangler.jsonc` and choose a unique Worker name if needed. Push the project to `master` to deploy. GitHub Actions validates every pull request and deploys verified builds on pushes to `master`.
 4. In Cloudflare Workers settings, add your custom domain (for example, your existing portfolio domain). Configure DNS through Cloudflare. A custom domain is not preconfigured in this source.
