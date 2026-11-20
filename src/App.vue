@@ -266,8 +266,8 @@ function closeProject() {
       <p class="eyebrow">{{ selected.context }}</p>
       <h2 id="project-title">{{ selected.title }}</h2>
       <p>{{ selected.detail }}</p>
-      <div class="outcome">
-        <h3>What changed</h3>
+      <div class="project-notes">
+        <h3>{{ selected.outcomeTitle }}</h3>
         <p>{{ selected.outcome }}</p>
       </div>
       <div class="tags">

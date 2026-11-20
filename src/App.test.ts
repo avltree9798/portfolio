@@ -47,6 +47,19 @@ describe('portfolio visitor journeys', () => {
     expect(page.get('dialog').text()).not.toMatch(/\bPRIVATE_PROJECT_MARKER\b/i)
     expect(page.get('dialog').find('a').exists()).toBe(false)
   })
+  it('gives project details relevant headings instead of a generic change report', async () => {
+    const page = mount(App)
+    for (const [id, heading] of [
+      ['security-automation', 'Impact'],
+      ['pyloquent', 'Working with data'],
+      ['clamshell', 'Development status'],
+    ]) {
+      await page.get(`[data-project="${id}"] button`).trigger('click')
+      expect(page.get('dialog h3').text()).toBe(heading)
+      expect(page.get('dialog').text()).not.toContain('What changed')
+      await page.get('button[aria-label="Close project"]').trigger('click')
+    }
+  })
   it('toggles navigation on small screens', async () => {
     const page = mount(App)
     await page.get('button[aria-controls="navigation"]').trigger('click')

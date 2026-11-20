@@ -930,23 +930,23 @@ dialog::backdrop {
   font-size: 2rem;
 }
 .dialog-body h2 {
+  overflow-wrap: anywhere;
   margin-block: 20px;
 }
 .dialog-body > p:not(.eyebrow) {
   color: #bdb3c6;
 }
-.outcome {
-  background: #29262e;
-  border-left: 2px solid var(--coral);
-  padding: 20px;
-  margin-top: 24px;
+.project-notes {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-block: 24px;
 }
-.outcome h3 {
+.project-notes h3 {
   font-size: 1rem;
   margin-bottom: 8px;
   letter-spacing: 0;
 }
-.outcome p {
+.project-notes p {
   font-size: 0.9375rem;
   color: #cfc4d7;
 }
@@ -1348,9 +1348,6 @@ dialog::backdrop {
   }
   .dialog-body h2 {
     font-size: 2rem;
-  }
-  .outcome {
-    padding: 16px;
   }
 }
 @media (min-width: 581px) and (max-width: 950px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {

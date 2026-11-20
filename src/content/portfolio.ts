@@ -11,6 +11,7 @@ export interface Project {
     'terminal' | 'apple' | 'radar' | 'database' | 'handheld' | 'dual-screen'
   status?: 'Work in progress'
   detail: string
+  outcomeTitle: string
   outcome: string
   context: string
   url?: string
@@ -46,6 +47,7 @@ export const portfolio = {
       context: 'Cloudflare · Internal project',
       detail:
         'Built a JavaScript logging ingestion and enrichment pipeline for multiple SaaS applications, with infrastructure managed through Terraform.',
+      outcomeTitle: 'Impact',
       outcome:
         'Logging processing time reduced from 2 hours to under 5 minutes.',
     },
@@ -59,8 +61,9 @@ export const portfolio = {
       context: 'Open-source Python library',
       detail:
         'An asynchronous ORM inspired by Laravel Eloquent, bringing Pydantic models, relationships, query building and migrations together. Includes drivers for SQLite, PostgreSQL, MySQL and Cloudflare D1.',
+      outcomeTitle: 'Working with data',
       outcome:
-        'Tests cover pooled transaction isolation and connection routing, alongside model operations and database relationships.',
+        'Define Pydantic models, query related records and manage schema changes through one Python API. Transaction tests check that concurrent requests keep their database connections separate.',
       url: 'https://github.com/avltree9798/pyloquent',
     },
     {
@@ -73,8 +76,9 @@ export const portfolio = {
       context: 'Open-source security research tool',
       detail:
         'A Python scanner that examines Mach-O dependencies and library search paths to identify missing library candidates. Exports findings as JSON for further investigation.',
+      outcomeTitle: 'Reading the results',
       outcome:
-        'Makes potential dynamic library hijack opportunities easier to investigate. Findings are candidates for review, rather than proof of exploitability.',
+        'Reports list missing library candidates for manual investigation. A missing library can suggest a hijack opportunity, but does not establish exploitability on its own.',
       url: 'https://github.com/avltree9798/dylib_hijack_scanner',
     },
     {
@@ -87,8 +91,9 @@ export const portfolio = {
       context: 'Educational Game Boy emulator',
       detail:
         'A Game Boy emulator written in C with SDL2, exploring how CPU instruction execution, memory mapping, graphics, timers, audio and input work together. The accompanying blog series introduces these systems to software engineers.',
+      outcomeTitle: 'Inside the emulator',
       outcome:
-        'A practical route into systems engineering, with implementation trade-offs and current limitations explained in the article series.',
+        'The accompanying article series follows the implementation from CPU instructions and memory access through graphics, audio and verification, explaining the trade-offs along the way.',
       url: 'https://github.com/avltree9798/gmboy',
     },
     {
@@ -102,8 +107,9 @@ export const portfolio = {
       context: 'Experimental Nintendo DS and 3DS emulator',
       detail:
         'An emulator project combining ARM interpretation and console hardware modelling with a SwiftUI interface for iPhone and iPad. The architecture separates the emulator cores from presentation, audio and input.',
+      outcomeTitle: 'Development status',
       outcome:
-        'Synthetic ROM and subsystem tests exercise CPU and hardware behaviour. Compatibility remains under development.',
+        'An experimental emulator in active development. Synthetic ROMs and subsystem tests exercise CPU and hardware behaviour; game compatibility is still being developed.',
       url: 'https://github.com/avltree9798/clamshell',
     },
     {
@@ -117,6 +123,7 @@ export const portfolio = {
       context: 'Open-source project',
       detail:
         'An Objective-C jailbreak detection library for iOS applications. Designed to help applications identify jailbroken devices and protect sensitive functionality from unauthorised access.',
+      outcomeTitle: 'In use',
       outcome:
         'Adopted by more than 15 production iOS applications in Indonesia and Singapore.',
     },
@@ -130,9 +137,10 @@ export const portfolio = {
       artwork: 'radar',
       context: 'Open-source project',
       detail:
-        'An open-source implementation of Apple’s Endpoint Security Framework for monitoring and controlling system events on macOS. Provides real-time visibility into file access and process execution.',
+        'An open-source implementation of Apple’s Endpoint Security Framework for monitoring and controlling system events on macOS. Uses endpoint events to observe file access and process execution.',
+      outcomeTitle: 'System visibility',
       outcome:
-        'Visibility into the system events that matter for endpoint security.',
+        'File and process events expose activity that security tooling can inspect, providing a foundation for endpoint monitoring.',
     },
   ] satisfies Project[],
   experience: [
