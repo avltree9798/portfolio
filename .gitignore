@@ -7,3 +7,7 @@ dist/
 .DS_Store
 test-results/
 playwright-report/
+
+# Generated from src/content/cv.json during development and builds.
+/public/Anthony_Viriya_CV.pdf
+/src/content/posts.generated.json

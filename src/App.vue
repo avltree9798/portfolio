@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue'
 import { portfolio, type Category, type Project } from './content/portfolio'
 import PixelLandscape from './components/PixelLandscape.vue'
 import ProjectCard from './components/ProjectCard.vue'
+import WritingSection from './components/WritingSection.vue'
 const menuOpen = ref(false)
 const category = ref<Category>('All work')
 const categories: Category[] = [
@@ -56,6 +57,7 @@ function closeProject() {
       aria-label="Main navigation"
     >
       <a href="#work" @click="menuOpen = false">Work</a
+      ><a href="/blog/" @click="menuOpen = false">Writing</a
       ><a href="#experience" @click="menuOpen = false">Experience</a
       ><a href="#about" @click="menuOpen = false">About</a
       ><a href="#contact" class="nav-contact" @click="menuOpen = false"
@@ -221,6 +223,7 @@ function closeProject() {
         </ul>
       </div>
     </section>
+    <WritingSection />
     <section id="contact" class="contact shell" aria-labelledby="contact-title">
       <p class="eyebrow">GOOD THINGS START WITH A CONVERSATION</p>
       <h2 id="contact-title">

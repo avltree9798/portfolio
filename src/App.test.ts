@@ -7,10 +7,13 @@ describe('portfolio visitor journeys', () => {
   it('introduces Anthony and offers a real contact and downloadable CV', () => {
     const page = mount(App)
     expect(page.text()).toContain(portfolio.name)
+    expect(page.text()).not.toMatch(/\bPRIVATE_PROJECT_MARKER\b/i)
+    expect(page.text()).toContain('Field notes')
+    expect(page.text()).not.toContain('Hello, world')
     expect(page.get('header .brand').text()).toContain('avltree9798')
-    expect(
-      page.find('a[href="mailto:anthonyviriya98@gmail.com"]').exists(),
-    ).toBe(true)
+    expect(page.find('a[href="mailto:me@avltree9798.co.uk"]').exists()).toBe(
+      true,
+    )
     expect(page.find('a[download]').attributes('href')).toBe(
       '/Anthony_Viriya_CV.pdf',
     )
@@ -41,6 +44,7 @@ describe('portfolio visitor journeys', () => {
       .trigger('click')
     expect(page.get('dialog').text()).toContain('Internal project')
     expect(page.get('dialog').text()).toContain('Cloudflare')
+    expect(page.get('dialog').text()).not.toMatch(/\bPRIVATE_PROJECT_MARKER\b/i)
     expect(page.get('dialog').find('a').exists()).toBe(false)
   })
   it('toggles navigation on small screens', async () => {

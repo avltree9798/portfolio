@@ -1,0 +1,120 @@
+{
+  "name": "Anthony Viriya",
+  "role": "Security Engineer",
+  "updated": "July 2026",
+  "location": "London, England, United Kingdom",
+  "email": "me@avltree9798.co.uk",
+  "phone": "07472 540095",
+  "website": "avltree9798.co.uk",
+  "github": "avltree9798",
+  "linkedin": "anthony-viriya",
+  "certifications": [
+    "GIAC Machine Learning Engineer (GMLE) - 1318",
+    "Offensive Security macOS Researcher (OSMR) - OS-45904",
+    "CREST Practitioner Security Analyst (CPSA) - 95057205",
+    "CREST Registered Penetration Tester (CRT) - 95057205"
+  ],
+  "experience": [
+    {
+      "company": "Cloudflare",
+      "role": "Security Engineer, Delivery and Automation Team",
+      "location": "London, UK",
+      "period": "Feb 2024 – present",
+      "bullets": [
+        "Served as a Subject Matter Expert (SME) in macOS Security, iOS Security, Python, and Security Automation.",
+        "Led the migration of EDR for 6000+ devices encompassing all three platforms (macOS, Linux, and Windows) from Crowdstrike to SentinelOne with 0 downtime to our Zero Trust security posture and 100% coverage.",
+        "Designed and developed an in-house Python based Mobile Device Management (MDM) tool, effectively managing over 10,000 mobile devices across the organisation. The infrastructure was hosted in GCP and managed by Terraform.",
+        "Spearheaded security automation efforts for enterprise security, streamlining processes and ensuring efficient implementation of automated controls.",
+        "Designed and developed an in-house JavaScript based scalable logging ingestion and enrichment pipeline for multiple SaaS applications, reducing processing time from 2 hours to just under 5 minutes. The infrastructure was hosted in Cloudflare and managed by Terraform.",
+        "Conducted privacy and reputation assessments for new vendors to ensure alignment with organisational security policies.",
+        "Designed and developed a FedRAMP compliant asset inventory system that automates aggregation of asset data, compiles compliance reports, and publishes audit-ready outputs, ensuring continuous alignment with regulatory requirements.",
+        "Eliminated a recurring bottleneck in Cloudflare’s Zero Trust posture checks, improving new-hire onboarding efficiency and reducing time-to-access for core applications from days to minutes.",
+        "Led the development of an internal GCP recommender system that provides recommendations for cost optimisation and resource utilisation, helping to reduce cloud costs and risks.",
+        "Contributed to the testing and deployment of a new EDR solution on Cloudflare production servers running on Linux, ensuring a smooth transition and maintaining the security posture of the 20% of the entire internet."
+      ]
+    },
+    {
+      "company": "Yelp UK LTD",
+      "role": "Senior Security Incident & Detection Engineer",
+      "location": "London, UK",
+      "period": "Nov 2021 – Feb 2024",
+      "bullets": [
+        "Served as a subject matter expert (SME) for macOS & iOS security, specialising in areas such as malware reversing, security tool implementation, etc.",
+        "Developed and deployed email and link security automation scanner. Those systems have more than 90% true positive rate based on on-call ticket resolution. The infrastructure was hosted in AWS and managed by Terraform.",
+        "Led the development and deployment of an internal macOS Sandbox Agent to perform automated malware analysis using Apple’s Endpoint Security Framework. Wrote 5 initial detection rules for the sandbox. The infrastructure was hosted in AWS.",
+        "Led the security audit automation initiative for third party risk management programme to improve efficiency and objectivity across all audit processes.",
+        "Led the culture of automatic service deployment by using GitHub repo branches to determine the deployment environment (staging/prod) and Jenkins to automate the process. Reduced deployment mistakes by 100%.",
+        "Participated in on-call rotation for malware, phishing, threat modelling on a new system and other corporate security related tasks."
+      ]
+    },
+    {
+      "company": "Gopay",
+      "role": "Senior Product Security Engineer",
+      "location": "Jakarta, ID",
+      "period": "Feb 2021 – Aug 2021",
+      "bullets": [
+        "Served as a subject matter expert for iOS application security.",
+        "Performed penetration testing and code review, preventing 3 critical vulnerabilities from making it into the production app.",
+        "Implemented improvements to enhance security posture such as SAST, DAST, and Dependency Tracker, including automated vulnerability scanning and dependency monitoring across the development lifecycle.",
+        "Developed and deployed a product security internal dashboard as a single source of truth for executives to learn initiatives and projects that are being explored by the team. Increased visibility and collaboration among stakeholders.",
+        "Owned the bug bounty process for Gopay, resulting in the identification and remediation of 30+ vulnerabilities.",
+        "Developed an internal Mobile App Security Testing automation system."
+      ]
+    },
+    {
+      "company": "ITSEC Asia",
+      "role": "Penetration Tester Consultant",
+      "location": "Jakarta, ID",
+      "period": "Jan 2019 – Jan 2021",
+      "bullets": [
+        "Served as a subject matter expert for iOS application engagement.",
+        "Successfully performed OTP bypass on several banking and e-commerce applications in Indonesia.",
+        "Found several critical vulnerabilities in banking & financial apps that can be used to steal money.",
+        "Bypassed many jailbreak detection frameworks & libraries used by many banking institutions in Indonesia and Singapore.",
+        "Wrote a Python service to automate API contract testing using Burp Suite active scanner, improving testing efficiency by 100%.",
+        "Wrote technical reports for vulnerabilities found and provided high-level recommendations on how to fix them."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "isJailbroken",
+      "description": "Open-source jailbreak detection library built with Objective-C for iOS applications. Used by multiple iOS apps to detect jailbroken devices and prevent unauthorised access.",
+      "bullets": [
+        "Prevented unauthorised access to sensitive iOS applications by detecting jailbroken devices",
+        "Adopted by 15+ iOS apps in Indonesia and Singapore for production use"
+      ]
+    },
+    {
+      "name": "watcher",
+      "description": "Open-source implementation of Apple’s Endpoint Security Framework for monitoring and controlling system events on macOS.",
+      "bullets": [
+        "Provides real-time monitoring of file access, and process execution."
+      ]
+    }
+  ],
+  "publication": {
+    "title": "CVE-2022-46828: macOS Kernel Vulnerability Exploitation",
+    "subtitle": "DYLIB Injection in IntelliJ IDEA before 2022.3 for macOS",
+    "author": "Anthony Viriya",
+    "url": "https://vulners.com/cve/CVE-2022-46828",
+    "label": "vulners.com/cve/CVE-2022-46828",
+    "year": "2022"
+  },
+  "skills": {
+    "Languages": "Python, C, Objective-C, Swift, JavaScript",
+    "Security": "Hopper Disassembler, Burp Suite, JADX, Frida, Cycript, Email Security, Splunk, Crowdstrike, osquery, MDM, SIEM, Endpoint Detection and Response",
+    "Infrastructure": "Terraform, GCP, AWS, Docker, Kubernetes, GitLab CI/CD"
+  },
+  "education": {
+    "degree": "BSc & BEc",
+    "university": "Binus University",
+    "subject": "Management and Information Systems",
+    "location": "Jakarta, Indonesia",
+    "period": "Sept 2017 – May 2021",
+    "bullets": [
+      "Thesis: Web Application Firewall Business",
+      "Co-founded cybersecurity CTF team that placed top 2 in national competition"
+    ]
+  }
+}

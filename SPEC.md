@@ -19,3 +19,7 @@ Run `npm run dev`, `npm test`, `npm run build` and `npm run lint`. Vitest visito
 ## Build order
 
 Content and visitor tests → Vue presentation → responsive styling → GitOps pipeline → checks and browser review. Local completion does not imply a live deployment.
+
+## Content and publishing additions
+
+The repository remains private. Manual Wrangler releases are accepted while account billing blocks GitHub runners. The custom domain is `avltree9798.co.uk`; the contact address is `me@avltree9798.co.uk`. Confidential project details must remain absent from the public site and generated CV. The original-format CV is generated from `src/content/cv.json` with overflow checks. Markdown posts live in `content/posts`; drafts are excluded from every production artefact, while published articles become static HTML with canonical metadata and sitemap entries.
