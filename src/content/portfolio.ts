@@ -24,6 +24,14 @@ export const portfolio = {
   email: cv.email,
   github: 'https://github.com/avltree9798',
   linkedin: 'https://www.linkedin.com/in/anthony-viriya/',
+  aviation: {
+    aircraft: 'Airbus A350-1000',
+    aircraftCode: 'A35K',
+    airlines: [
+      { code: 'BA', name: 'British Airways' },
+      { code: 'JAL', name: 'Japan Airlines' },
+    ],
+  },
   projects: [
     {
       id: 'security-automation',

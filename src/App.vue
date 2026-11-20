@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { portfolio, type Category, type Project } from './content/portfolio'
-import PixelLandscape from './components/PixelLandscape.vue'
+import PixelAircraft from './components/PixelAircraft.vue'
+import AviationCard from './components/AviationCard.vue'
 import ProjectCard from './components/ProjectCard.vue'
 import WritingSection from './components/WritingSection.vue'
 const menuOpen = ref(false)
@@ -94,7 +95,7 @@ function closeProject() {
           >
         </div>
       </div>
-      <PixelLandscape />
+      <PixelAircraft />
       <div class="hero-bottom">
         <span>SECURITY IN THE DAY. SIDE QUESTS AFTER DARK.</span
         ><a href="#work">Keep exploring <span aria-hidden="true">↓</span></a>
@@ -196,13 +197,13 @@ function closeProject() {
           automation.
         </p>
         <p>
-          Away from the terminal, I’m drawn to Japan, Nintendo games and the joy
-          of a good side quest. That same curiosity tends to find its way back
+          Away from the terminal, I’m an avgeek with a soft spot for Japan,
+          Nintendo games and the Airbus A350-1000. British Airways and Japan
+          Airlines are my favourites. That same curiosity finds its way back
           into everything I build.
         </p>
         <div class="interest-tags">
-          <span>日本 · Japan</span><span>✚ Nintendo</span
-          ><span>⌘ Tinkering</span>
+          <span>日本 · Japan</span><span>✚ Nintendo</span><span>✈ Avgeek</span>
         </div>
       </div>
       <div class="toolkit">
@@ -223,6 +224,7 @@ function closeProject() {
         </ul>
       </div>
     </section>
+    <AviationCard />
     <WritingSection />
     <section id="contact" class="contact shell" aria-labelledby="contact-title">
       <p class="eyebrow">GOOD THINGS START WITH A CONVERSATION</p>

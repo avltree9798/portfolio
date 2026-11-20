@@ -1697,3 +1697,135 @@ dialog::backdrop {
     padding-block: 28px;
   }
 }
+
+/* Aviation accents: night-flight navy, ivory fuselage and warm red details. */
+.flight-scene svg {
+  border-color: #35415a;
+  box-shadow: 16px 16px 0 #1a2030;
+}
+.flight-scene .scene-caption > span:first-child {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+.aviation-card {
+  max-width: 1152px;
+  margin: 0 auto 72px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  padding: 32px 40px;
+  border: 1px solid #3d445a;
+  border-radius: 8px;
+  background: #1b2334;
+  position: relative;
+  overflow: hidden;
+}
+.aviation-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #d4777d;
+}
+.aviation-story h3 {
+  font-size: 1.75rem;
+  margin-top: 10px;
+  letter-spacing: -0.035em;
+}
+.aviation-story > p:not(.eyebrow) {
+  margin-top: 10px;
+  font-size: 0.9375rem;
+  color: #b9bfcc;
+}
+.airline-favourites {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.airline-favourites > span {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #e2e4e9;
+}
+.airline-favourites b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 0.75rem/1 var(--mono);
+  min-width: 40px;
+  min-height: 30px;
+  border: 1px solid #627899;
+  border-radius: 3px;
+  color: #f6eee6;
+  background: #293e60;
+}
+.airline-favourites .airline-jal b {
+  border-color: #d58b90;
+  background: #733d4a;
+}
+.aircraft-favourite {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px dashed #6b7284;
+  padding-left: 40px;
+  min-width: 224px;
+}
+.aircraft-favourite strong {
+  font: 600 3.25rem/1.3 var(--mono);
+  letter-spacing: -0.07em;
+  color: #f0e9df;
+}
+.aircraft-favourite strong > span {
+  color: var(--coral);
+  font-size: 1.3rem;
+  margin-left: 24px;
+  vertical-align: middle;
+}
+.aircraft-favourite > span:last-child {
+  font-size: 0.875rem;
+  color: #b9bfcc;
+  margin-top: 4px;
+}
+@media (max-width: 1248px) {
+  .aviation-card {
+    margin-inline: 48px;
+  }
+}
+@media (max-width: 1050px) {
+  .aviation-card {
+    margin-inline: 32px;
+  }
+}
+@media (max-width: 680px) {
+  .aviation-card {
+    grid-template-columns: 1fr;
+    padding: 28px;
+    gap: 24px;
+    margin-bottom: 52px;
+  }
+  .aircraft-favourite {
+    border-left: 0;
+    border-top: 1px dashed #6b7284;
+    padding: 24px 0 0;
+    min-width: 0;
+  }
+  .aircraft-favourite strong {
+    font-size: 2.75rem;
+  }
+  .airline-favourites {
+    gap: 16px;
+  }
+}
+@media (max-width: 580px) {
+  .aviation-card {
+    margin-inline: 22px;
+    padding: 24px;
+  }
+  .flight-scene svg {
+    box-shadow: 9px 9px 0 #1a2030;
+  }
+}

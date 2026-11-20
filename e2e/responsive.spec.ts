@@ -31,6 +31,11 @@ for (const layout of layouts) {
       const artwork = await page.locator('.landscape svg').boundingBox()
       expect(artwork).not.toBeNull()
       expect(artwork!.y + artwork!.height * 0.8).toBeLessThan(layout.height)
+      const aircraft = await page.locator('.aircraft-pixels').boundingBox()
+      expect(aircraft!.x).toBeGreaterThanOrEqual(artwork!.x)
+      expect(aircraft!.x + aircraft!.width).toBeLessThanOrEqual(
+        artwork!.x + artwork!.width,
+      )
     }
     const cards = page.locator('[data-project]')
     await expect(cards).toHaveCount(3)

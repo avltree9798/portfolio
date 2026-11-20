@@ -22,7 +22,7 @@ npm run dev
 3. Open a pull request. GitHub Actions runs the quality gates and deployment dry run.
 4. Merge to `master`. When GitHub runners are available, the exact checked build is deployed to Cloudflare Workers. For now, run the manual release flow below.
 
-For layout and introductory copy, edit `src/App.vue`; for artwork, edit `src/components/PixelLandscape.vue`. Run `npm run format` after editing. Wrangler is pinned to 4.164.0 because 4.165.0 fails when querying this account’s deployed Worker subdomain. Current employment and outcomes reflect the supplied July 2026 CV and should be reviewed when updating. Open-source project links are omitted until their exact repository URLs are confirmed.
+For layout and introductory copy, edit `src/App.vue`; for artwork, edit `src/components/PixelAircraft.vue`. Run `npm run format` after editing. Wrangler is pinned to 4.164.0 because 4.165.0 fails when querying this account’s deployed Worker subdomain. Current employment and outcomes reflect the supplied July 2026 CV and should be reviewed when updating. Open-source project links are omitted until their exact repository URLs are confirmed.
 
 ## Connect GitHub and Cloudflare
 
