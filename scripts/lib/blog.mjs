@@ -73,7 +73,7 @@ export async function loadPosts() {
 const navigation =
   '<header class="shell blog-header"><a class="brand" href="/"><span class="brand-symbol">⌘</span>avltree9798</a><nav aria-label="Blog navigation"><a href="/blog/">Writing</a><a href="/">Portfolio</a></nav></header>'
 const footer =
-  '<footer class="shell footer"><span>Anthony Viriya · Field notes</span><a href="mailto:me@avltree9798.co.uk">Say hello</a></footer>'
+  '<footer class="shell footer"><span>Anthony Viriya · Writing</span><a href="mailto:me@avltree9798.co.uk">Email me</a></footer>'
 function documentHtml(title, description, url, css, content) {
   return `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#15151c"><title>${escapeHtml(title)} · Anthony Viriya</title><meta name="description" content="${escapeHtml(description)}"><link rel="canonical" href="${escapeHtml(url)}"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(url)}"><link rel="icon" href="/favicon.svg">${css}</head><body><a class="skip-link" href="#main">Skip to content</a>${navigation}${content}${footer}</body></html>`
 }
@@ -86,18 +86,18 @@ export function renderArticle(post, css) {
     post.summary,
     `https://avltree9798.co.uk/blog/${post.slug}/`,
     css,
-    `<main id="main" class="shell article-shell"><article><a class="quiet-link" href="/blog/">All field notes</a><p class="eyebrow article-date"><time datetime="${post.date}">${post.date}</time> · ${post.minutes} min read</p><h1>${escapeHtml(post.title)}</h1><p class="article-summary">${escapeHtml(post.summary)}</p><div class="tags">${tags}</div><div class="prose">${post.html}</div></article></main>`,
+    `<main id="main" class="shell article-shell"><article><a class="quiet-link" href="/blog/">All posts</a><p class="eyebrow article-date"><time datetime="${post.date}">${post.date}</time> · ${post.minutes} min read</p><h1>${escapeHtml(post.title)}</h1><p class="article-summary">${escapeHtml(post.summary)}</p><div class="tags">${tags}</div><div class="prose">${post.html}</div></article></main>`,
   )
 }
 export function renderIndex(posts, css) {
   const list = posts.length
     ? `<div class="post-list">${posts.map((post) => `<a class="post-row" href="/blog/${post.slug}/"><time datetime="${post.date}">${post.date}</time><div><h2>${escapeHtml(post.title)}</h2><p>${escapeHtml(post.summary)}</p></div><span>${post.minutes} min read</span></a>`).join('')}</div>`
-    : '<div class="notebook-empty"><span aria-hidden="true">✳</span><h2>The notebook is open.</h2><p>Field notes on security, engineering and the occasional side quest.<br>New entries will appear here.</p></div>'
+    : '<div class="notebook-empty"><span aria-hidden="true">✳</span><h2>No posts yet.</h2><p>Posts about security, engineering and side projects will appear here.</p></div>'
   return documentHtml(
-    'Field notes',
-    'Writing on security, engineering and the occasional side quest.',
+    'Writing',
+    'Posts about security, engineering and side projects.',
     'https://avltree9798.co.uk/blog/',
     css,
-    `<main id="main" class="shell article-shell"><p class="eyebrow">THINKING OUT LOUD</p><h1>Field notes<span>.</span></h1><p class="article-summary">Things learned. Questions explored. Ideas worth keeping.</p>${list}</main>`,
+    `<main id="main" class="shell article-shell"><p class="eyebrow">WRITING</p><h1>Writing<span>.</span></h1><p class="article-summary">Posts about security, engineering and side projects.</p>${list}</main>`,
   )
 }

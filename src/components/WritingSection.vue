@@ -18,10 +18,10 @@ const entries: PostSummary[] = posts
   >
     <div class="section-heading">
       <div>
-        <p class="eyebrow">THINKING OUT LOUD</p>
-        <h2 id="writing-title">Field notes<span>.</span></h2>
+        <p class="eyebrow">WRITING</p>
+        <h2 id="writing-title">Recent posts<span>.</span></h2>
       </div>
-      <a class="quiet-link" href="/blog/">Read the notebook</a>
+      <a class="quiet-link" href="/blog/">All posts</a>
     </div>
     <div v-if="entries.length" class="post-list">
       <a
@@ -39,9 +39,9 @@ const entries: PostSummary[] = posts
     </div>
     <div v-else class="notebook-empty">
       <span aria-hidden="true">✳</span>
-      <h3>The notebook is open.</h3>
+      <h3>No posts yet.</h3>
       <p>
-        Field notes on security, engineering and the occasional side quest.<br />New
+        Posts about security, engineering and side projects will appear here.<br />New
         entries will appear here.
       </p>
     </div>

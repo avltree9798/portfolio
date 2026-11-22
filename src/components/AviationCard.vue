@@ -4,11 +4,9 @@ import { portfolio } from '../content/portfolio'
 <template>
   <aside class="aviation-card" aria-labelledby="aviation-title">
     <div class="aviation-story">
-      <p class="eyebrow">OFF DUTY · ABOVE THE CLOUDS</p>
-      <h3 id="aviation-title">An avgeek at heart.</h3>
-      <p>
-        Planes, pixels and a soft spot for Japan. A few of my favourite things.
-      </p>
+      <p class="eyebrow">AVIATION</p>
+      <h3 id="aviation-title">Planes I like.</h3>
+      <p>My favourite airlines and aircraft.</p>
       <div class="airline-favourites" aria-label="Favourite airlines">
         <span
           v-for="airline in portfolio.aviation.airlines"

@@ -63,7 +63,7 @@ function closeProject() {
       ><a href="#experience" @click="menuOpen = false">Experience</a
       ><a href="#about" @click="menuOpen = false">About</a
       ><a href="#contact" class="nav-contact" @click="menuOpen = false"
-        >Let’s talk <span aria-hidden="true">✦</span></a
+        >Contact <span aria-hidden="true">✦</span></a
       >
     </nav>
   </header>
@@ -71,20 +71,19 @@ function closeProject() {
     <section class="hero shell" aria-labelledby="hero-title">
       <div class="hero-copy">
         <p class="eyebrow hero-intro">
-          <span class="small-cross" aria-hidden="true">✳</span> SECURITY
-          ENGINEER · LONDON, UK
+          <span class="small-cross" aria-hidden="true">✳</span> ANTHONY VIRIYA
         </p>
-        <h1 id="hero-title">
-          A curious mind.<br />A <span>defender’s</span><br />instinct.
-        </h1>
+        <h1 id="hero-title">Security engineer<br />in <span>London</span>.</h1>
         <p class="hero-description">
-          Hey, I’m {{ portfolio.name }}.<br />I build things that keep people
-          safe, from the<br class="desktop-break" />
-          devices in their hands to the systems behind them.
+          I’ve worked on Apple platform security, detection engineering and<br
+            class="desktop-break"
+          />
+          security automation. Outside work I build emulators and a flight
+          tracker.
         </p>
         <div class="hero-actions">
           <a class="button primary" href="#work"
-            >Explore my work <span aria-hidden="true">＋</span></a
+            >See my work <span aria-hidden="true">＋</span></a
           ><a class="button secondary" href="/Anthony_Viriya_CV.pdf" download
             >Download CV <span aria-hidden="true">↓</span></a
           >
@@ -92,14 +91,14 @@ function closeProject() {
         <div class="currently">
           <span class="cloud-icon" aria-hidden="true">☁</span
           ><span
-            >Currently engineering security at <strong>Cloudflare</strong></span
+            >Security Engineer at <strong>Cloudflare</strong> since 2024</span
           >
         </div>
       </div>
       <PixelAircraft />
       <div class="hero-bottom">
-        <span>SECURITY IN THE DAY. SIDE QUESTS AFTER DARK.</span
-        ><a href="#work">Keep exploring <span aria-hidden="true">↓</span></a>
+        <span>LONDON, UK</span
+        ><a href="#work">Projects <span aria-hidden="true">↓</span></a>
       </div>
     </section>
     <div class="specialities">
@@ -107,14 +106,14 @@ function closeProject() {
         <span>Apple platform security</span><b aria-hidden="true">✦</b
         ><span>Security automation</span><b aria-hidden="true">✦</b
         ><span>Cloud infrastructure</span><b aria-hidden="true">✦</b
-        ><span>Offensive thinking. Defensive building.</span>
+        ><span>Detection engineering</span>
       </div>
     </div>
     <section id="work" class="section shell" aria-labelledby="work-title">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">A FEW THINGS I’VE BUILT</p>
-          <h2 id="work-title">Work with a purpose<span>.</span></h2>
+          <p class="eyebrow">PROJECTS</p>
+          <h2 id="work-title">Things I’ve built<span>.</span></h2>
         </div>
         <a
           class="quiet-link"
@@ -142,10 +141,7 @@ function closeProject() {
           @inspect="inspect"
         />
       </div>
-      <p class="results" aria-live="polite">
-        {{ projects.length }} projects · Selected work, from enterprise systems
-        to open source.
-      </p>
+      <p class="results" aria-live="polite">{{ projects.length }} projects</p>
     </section>
     <section
       id="experience"
@@ -153,16 +149,14 @@ function closeProject() {
       aria-labelledby="experience-title"
     >
       <div class="experience-intro">
-        <p class="eyebrow">THE JOURNEY SO FAR</p>
-        <h2 id="experience-title">
-          Always learning.<br />Always building<span>.</span>
-        </h2>
+        <p class="eyebrow">EXPERIENCE</p>
+        <h2 id="experience-title">Where I’ve worked<span>.</span></h2>
         <p>
-          From finding vulnerabilities to building the systems that prevent
-          them.
+          Penetration testing first, then product security, detection
+          engineering and security automation.
         </p>
         <a href="/Anthony_Viriya_CV.pdf" download class="quiet-link"
-          >The full story in my CV <span aria-hidden="true">↓</span></a
+          >Full CV (PDF) <span aria-hidden="true">↓</span></a
         >
       </div>
       <div class="timeline">
@@ -187,27 +181,23 @@ function closeProject() {
       aria-labelledby="about-title"
     >
       <div class="about-panel">
-        <p class="eyebrow">THE HUMAN BEHIND THE TERMINAL</p>
-        <h2 id="about-title">
-          Security is my craft.<br />Curiosity is my compass<span>.</span>
-        </h2>
+        <p class="eyebrow">ABOUT</p>
+        <h2 id="about-title">About me<span>.</span></h2>
         <p>
-          I’m a London-based security engineer who enjoys understanding how
-          things work, and what happens when they don’t. My work brings together
-          Apple platform security, offensive research and thoughtful automation.
+          I’m a security engineer in London. Most of my work has been on Apple
+          platform security, offensive research and automating security work.
         </p>
         <p>
-          Away from the terminal, I’m an avgeek with a soft spot for Japan,
-          Nintendo games and the Airbus A350-1000. British Airways and Japan
-          Airlines are my favourites. That same curiosity finds its way back
-          into everything I build.
+          Outside work I’m into aviation, Japan and Nintendo games. My favourite
+          aircraft is the Airbus A350-1000, and my favourite airlines are
+          British Airways and Japan Airlines.
         </p>
         <div class="interest-tags">
           <span>日本 · Japan</span><span>✚ Nintendo</span><span>✈ Avgeek</span>
         </div>
       </div>
       <div class="toolkit">
-        <p class="eyebrow">IN MY TOOLKIT</p>
+        <p class="eyebrow">SKILLS</p>
         <div class="tags skill-tags">
           <span v-for="skill in portfolio.skills" :key="skill">{{
             skill
@@ -227,12 +217,10 @@ function closeProject() {
     <AviationCard />
     <WritingSection />
     <section id="contact" class="contact shell" aria-labelledby="contact-title">
-      <p class="eyebrow">GOOD THINGS START WITH A CONVERSATION</p>
-      <h2 id="contact-title">
-        Have a curious problem<span>?</span><br />Let’s figure it out.
-      </h2>
+      <p class="eyebrow">CONTACT</p>
+      <h2 id="contact-title">Get in touch<span>.</span></h2>
       <a class="button primary" :href="`mailto:${portfolio.email}`"
-        >Say hello <span aria-hidden="true">✦</span></a
+        >Email me <span aria-hidden="true">✦</span></a
       >
       <p>{{ portfolio.email }}</p>
     </section>
@@ -241,7 +229,7 @@ function closeProject() {
     <a class="brand" href="#"
       ><span class="brand-symbol" aria-hidden="true"><span>⌘</span></span
       ><span>{{ portfolio.name }}</span></a
-    ><span>Made with care. And a little pixel magic.</span>
+    ><span>London, UK</span>
     <div>
       <a :href="portfolio.github" target="_blank" rel="noopener noreferrer"
         >GitHub</a

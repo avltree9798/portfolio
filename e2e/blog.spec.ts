@@ -9,7 +9,7 @@ for (const width of [390, 760]) {
     const response = await page.goto('/blog/')
     expect(response?.status()).toBe(200)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Field notes',
+      'Writing',
     )
     await expect(page.locator('body')).not.toContainText('Hello, world')
     expect(

@@ -53,16 +53,6 @@ defineEmits<{ inspect: [project: Project] }>()
         </div>
       </div>
       <div v-else class="radar-scope"><span></span><i></i><b></b><em></em></div>
-      <span class="art-caption">{{
-        {
-          terminal: 'AUTOMATE THE BORING. SECURE THE REST.',
-          apple: 'TRUST, BUT VERIFY.',
-          radar: 'OBSERVE. UNDERSTAND. DEFEND.',
-          database: 'MODELS. QUERIES. RELATIONSHIPS.',
-          handheld: 'ONE INSTRUCTION AT A TIME.',
-          'dual-screen': 'TWO SCREENS. MANY MOVING PARTS.',
-        }[project.artwork]
-      }}</span>
     </div>
     <div class="project-body">
       <p class="eyebrow">
@@ -75,7 +65,7 @@ defineEmits<{ inspect: [project: Project] }>()
         <span v-for="tag in project.tags" :key="tag">{{ tag }}</span>
       </div>
       <button class="text-button" @click="$emit('inspect', project)">
-        Explore project <span aria-hidden="true">＋</span>
+        Details <span aria-hidden="true">＋</span>
       </button>
     </div>
   </article>

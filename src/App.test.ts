@@ -9,7 +9,7 @@ describe('portfolio visitor journeys', () => {
     const page = mount(App)
     expect(page.text()).toContain(portfolio.name)
     expect(page.text()).not.toMatch(/\bPRIVATE_PROJECT_MARKER\b/i)
-    expect(page.text()).toContain('Field notes')
+    expect(page.text()).toContain('Recent posts')
     expect(page.text()).not.toContain('Hello, world')
     expect(page.get('header .brand').text()).toContain('avltree9798')
     expect(page.find('a[href="mailto:me@avltree9798.co.uk"]').exists()).toBe(
@@ -52,7 +52,7 @@ describe('portfolio visitor journeys', () => {
     const page = mount(App)
     for (const [id, heading] of [
       ['security-automation', 'Impact'],
-      ['pyloquent', 'Working with data'],
+      ['pyloquent', 'What it does'],
       ['clamshell', 'Development status'],
     ]) {
       await page.get(`[data-project="${id}"] button`).trigger('click')

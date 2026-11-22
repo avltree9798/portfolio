@@ -44,9 +44,9 @@ export const portfolio = {
   projects: [
     {
       id: 'security-automation',
-      title: 'Logging, without the lag.',
+      title: 'SaaS log pipeline',
       subtitle:
-        'A faster path from SaaS events to security insight at Cloudflare.',
+        'Security log ingestion and enrichment for SaaS apps at Cloudflare.',
       category: 'Security engineering',
       tags: ['JavaScript', 'Cloudflare', 'Terraform'],
       artwork: 'terminal',
@@ -76,14 +76,14 @@ export const portfolio = {
     {
       id: 'pyloquent',
       title: 'Pyloquent',
-      subtitle: 'An expressive Python interface to the database.',
+      subtitle: 'An async Python ORM inspired by Laravel Eloquent.',
       category: 'Open source',
       tags: ['Python', 'Pydantic', 'Cloudflare D1'],
       artwork: 'database',
       context: 'Open-source Python library',
       detail:
         'An asynchronous ORM inspired by Laravel Eloquent, bringing Pydantic models, relationships, query building and migrations together. Includes drivers for SQLite, PostgreSQL, MySQL and Cloudflare D1.',
-      outcomeTitle: 'Working with data',
+      outcomeTitle: 'What it does',
       outcome:
         'Define Pydantic models, query related records and manage schema changes through one Python API. Transaction tests check that concurrent requests keep their database connections separate.',
       url: 'https://github.com/avltree9798/pyloquent',
@@ -91,7 +91,7 @@ export const portfolio = {
     {
       id: 'dylib-hijack-scanner',
       title: 'dylib_hijack_scanner',
-      subtitle: 'Following the paths a macOS library loader takes.',
+      subtitle: 'Finds libraries that macOS apps try to load but are missing.',
       category: 'Open source',
       tags: ['Python', 'Mach-O', 'macOS security'],
       artwork: 'radar',
@@ -106,7 +106,7 @@ export const portfolio = {
     {
       id: 'gmboy',
       title: 'gmboy',
-      subtitle: 'Learning systems engineering, one instruction at a time.',
+      subtitle: 'A Game Boy emulator in C, with an article series.',
       category: 'Open source',
       tags: ['C', 'SDL2', 'Emulation'],
       artwork: 'handheld',
@@ -115,13 +115,14 @@ export const portfolio = {
         'A Game Boy emulator written in C with SDL2, exploring how CPU instruction execution, memory mapping, graphics, timers, audio and input work together. The accompanying blog series introduces these systems to software engineers.',
       outcomeTitle: 'Inside the emulator',
       outcome:
-        'The accompanying article series follows the implementation from CPU instructions and memory access through graphics, audio and verification, explaining the trade-offs along the way.',
+        'An eight-part article series walks through the CPU, memory, graphics, audio and testing, with links to the code.',
       url: 'https://github.com/avltree9798/gmboy',
     },
     {
       id: 'clamshell',
       title: 'Clamshell',
-      subtitle: 'Two screens. A deeper dive into Nintendo hardware.',
+      subtitle:
+        'An experimental Nintendo DS and 3DS emulator for iPhone and iPad.',
       category: 'Open source',
       tags: ['Swift', 'SwiftUI', 'ARM'],
       artwork: 'dual-screen',
@@ -138,13 +139,13 @@ export const portfolio = {
       id: 'isjailbroken',
       url: 'https://github.com/avltree9798/isJailbroken',
       title: 'isJailbroken',
-      subtitle: 'A closer look beneath the surface of iOS.',
+      subtitle: 'Jailbreak detection for iOS apps.',
       category: 'Open source',
       tags: ['Objective-C', 'iOS', 'Mobile security'],
       artwork: 'apple',
       context: 'Open-source project',
       detail:
-        'An Objective-C jailbreak detection library for iOS applications. Designed to help applications identify jailbroken devices and protect sensitive functionality from unauthorised access.',
+        'An Objective-C library that lets an iOS app detect a jailbroken device and protect sensitive features.',
       outcomeTitle: 'In use',
       outcome:
         'Adopted by more than 15 production iOS applications in Indonesia and Singapore.',
@@ -153,16 +154,16 @@ export const portfolio = {
       id: 'watcher',
       url: 'https://github.com/avltree9798/watcher',
       title: 'watcher',
-      subtitle: 'Making the invisible visible on macOS.',
+      subtitle: 'Monitors file and process events on macOS.',
       category: 'Open source',
       tags: ['macOS', 'Endpoint Security', 'Monitoring'],
       artwork: 'radar',
       context: 'Open-source project',
       detail:
-        'An open-source implementation of Apple’s Endpoint Security Framework for monitoring and controlling system events on macOS. Uses endpoint events to observe file access and process execution.',
-      outcomeTitle: 'System visibility',
+        'Uses Apple’s Endpoint Security framework to monitor and control system events on macOS.',
+      outcomeTitle: 'What it records',
       outcome:
-        'File and process events expose activity that security tooling can inspect, providing a foundation for endpoint monitoring.',
+        'File access and process execution events, which other security tools can inspect.',
     },
   ] satisfies Project[],
   experience: [

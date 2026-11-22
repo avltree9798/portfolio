@@ -1,5 +1,5 @@
 ---
-title: 'Building Airtrace: an honest flight radar on Cloudflare Workers'
+title: 'Building Airtrace, a flight tracker on Cloudflare Workers'
 date: '2026-11-22'
 summary: 'How one Durable Object shares a free API plan between every visitor, why the map never predicts a position, and the small geometry tricks behind a radar scope, runway inference and replay.'
 tags: ['aviation', 'Cloudflare Workers', 'Vue', 'engineering']
@@ -14,7 +14,7 @@ _The live map with two-second updates. Map data © OpenStreetMap contributors; a
 
 Most of the interesting engineering came from two constraints. The data is free but rationed, and it is much less certain than a polished map makes it look. This post covers how the backend shares a small API allowance between everyone, how the frontend moves aircraft smoothly without inventing positions, and the small geometry tricks behind the spotting tools. It ends with the bugs that only appeared in production.
 
-## One object, one budget
+## Sharing one API plan between every visitor
 
 ADS-B data comes from volunteers' receivers, aggregated by community networks. The primary source, FlyItalyADSB, gives a free key 300,000 requests a month and 30 a minute. That is plenty for one person and nowhere near enough if every open browser tab polls on its own.
 
@@ -26,7 +26,7 @@ So no browser talks to a provider. Every request goes to a Worker, which forward
 
 Rounding the centre was a privacy decision as much as a caching one: the precise device location never reaches the server or the provider.
 
-## Failing over without lying
+## Failing over between providers
 
 There are three providers in a chain: FlyItalyADSB, then ADS-B.lol (450 requests a day, cached for three minutes), then AvioADSB (90 a day, a smaller radius). Each has its own budget, cache keys and cooldown policy. Authentication failures back off for 15 minutes, rate limits honour `Retry-After` with a three-minute minimum, and anything else retries after 30 seconds. Timeouts are 12 seconds for the primary and 5 for each backup, so the whole chain finishes inside the Durable Object's time limit for serialised work.
 
@@ -34,7 +34,7 @@ The rule I care about most is that sources are never blended. A snapshot comes f
 
 One provider refused all traffic from the Worker while the same request from my laptop succeeded. Cloudflare's block page and documentation explained it. For Worker subrequests that cross into another Cloudflare zone, the `CF-Connecting-IP` header carries a fixed Cloudflare address, and the target zone's firewall can see the request came from a Worker. A provider on Cloudflare can therefore block Workers as a group, which is what happened. No API key gets around a firewall rule, so Airtrace labels the fallback and moves on.
 
-## Smooth, but never ahead of the data
+## Smooth movement without guessing ahead
 
 A map that redraws every two seconds looks jerky, and the usual fix is dead reckoning: carry each aircraft forward along its last speed and track. I refused to do that. A projected position looks exactly like a real one, and it is wrong whenever the aircraft turns.
 
@@ -61,7 +61,7 @@ Legs come from the recorded track. A new leg starts only where the provider mark
 
 _The aircraft database knew this 747’s model and tracking history but not its build year, and its callsign prefix matches no airline Airtrace knows. Both say “Unknown” instead of a guess._
 
-## A radar scope in twenty lines
+## Drawing the radar scope
 
 The Nearby view in Spotter tools takes one location reading and does everything else in the browser. For each aircraft it computes the great-circle distance and the initial bearing from the observer. It then compares the aircraft's ground track with the bearing from the aircraft back to the observer. Within 60° it is approaching, beyond 120° it is moving away, and in between it is passing.
 
@@ -96,7 +96,7 @@ After that change JFK showed arrivals on 13L and departures on 13R, which is how
 
 _JFK's runways drawn from OurAirports threshold coordinates (public domain), with live traffic and an estimate of the runways in use._
 
-## Replay that follows the data
+## Replay and charts
 
 The replay steps through recorded positions rather than a model. Trails can be coloured by altitude or speed, and altitude and speed charts share the replay's time axis: the cursor follows playback, and selecting a point on either chart seeks to it. Charts and trails break at gaps of more than five minutes rather than drawing a confident straight line through the missing part.
 
@@ -106,15 +106,15 @@ _Replay of AAE8866 with the trail coloured by ground speed. The white line on bo
 
 A user report caught the most visible bug in this feature: a replayed aircraft pointing north while it flew south-west. When the feed omitted a track, the normaliser had stored `0`, which is a perfectly valid heading. Missing values are now `null`. Replay uses the recorded track, otherwise the bearing between consecutive recorded points (never across a gap), otherwise the last known track.
 
-## Installable, and offline only where that is honest
+## Installing the app and using it offline
 
 Airtrace installs as a web app with a service worker. The caching policy is a single pure function, which made it testable: the tests load the worker source into a Node `vm` sandbox with a stub `self` and call the function directly. Same-origin `GET` requests for the app shell, hashed assets, icons and the bundled airport data can be cached. `/api/` requests and every cross-origin request, including map tiles and photographs, always go to the network. Offline, the app opens with a notice, and your spotting log and settings are still there. Live tracking says it needs a connection.
 
-## Your own receiver, without server-side fetching
+## Accepting data from your own receiver
 
 Airtrace can also accept data from a personal readsb receiver. The obvious design is to give the server a receiver URL to poll, but that turns the Worker into a proxy that fetches arbitrary addresses. Instead, a small bridge next to the receiver pushes `aircraft.json` to the Worker with a bearer token. The token is a Cloudflare secret compared in constant time, and uploads are refused until it exists. Bodies are capped at 1 MiB, uploads more than a minute old are rejected, and the stored view expires after 15 seconds. Receiver data replaces community data only near the station, and the two are never mixed. I have not bought the hardware yet, so this is tested against recorded readsb output rather than a real antenna.
 
-## What production taught me
+## Bugs I only found in production
 
 Each of these passed the test suite and broke in production:
 
@@ -125,5 +125,3 @@ Each of these passed the test suite and broke in production:
 - **Deferred object updates.** Cloudflare can keep running old Durable Object code for a few minutes after a deploy. Changes to the object's contract must stay backward compatible, and releases that need the new code at once are activated explicitly.
 
 Every fix came with a regression test. The project now has 137 of them, covering domain logic, Worker contracts and the shared feed object, plus a browser walkthrough of each feature against the live site.
-
-If there is one lesson, it is that most of a data product's honesty lives in small decisions: a `null` instead of a `0`, a grade instead of a destination, "possible" instead of "landed". Each one is a line of code, and together they decide whether the map can be trusted.

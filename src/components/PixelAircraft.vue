@@ -1,7 +1,7 @@
 <template>
   <div class="landscape flight-scene">
     <div class="scene-caption">
-      <span>AFTER HOURS</span><span>A350-1000 · A35K</span>
+      <span>FAVOURITE AIRCRAFT</span><span>A350-1000 · A35K</span>
     </div>
     <svg
       viewBox="0 0 640 480"
@@ -85,7 +85,8 @@
       />
     </svg>
     <div class="scene-footer">
-      <span class="pixel-spark">✦</span> Long-haul daydreams. A35K always.
+      <span class="pixel-spark">✦</span> Flown by British Airways and Japan
+      Airlines.
     </div>
   </div>
 </template>
