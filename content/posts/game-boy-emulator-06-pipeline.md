@@ -1,55 +1,55 @@
 ---
-title: 'Game Boy emulator 6: pixels arriving on time'
+title: 'Game Boy emulator 6: the pixel pipeline, sprites and DMA'
 date: '2026-11-20'
-summary: 'Build a pixel FIFO, select sprites, position a window and move sprite data through DMA.'
+summary: 'The pixel FIFO, sprite selection and priority, the window layer and OAM DMA.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 6 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 6 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-Now that we can decode tile data, we need to explain how the right pixel arrives at the right position and time.
+Part 5 decoded tile data. This part covers how each pixel gets to the right place at the right time.
 
-The source uses a fetch state machine and a first-in, first-out queue. It also selects sprites, handles a window layer and models sprite-memory transfers. These features are a useful introduction to pipelines, backpressure and competing access to a resource.
+gmboy uses a fetch state machine feeding a first-in, first-out queue (FIFO). It also picks sprites, draws the window layer and copies sprite data with DMA. Along the way you'll meet pipelines, backpressure and two devices competing for the same memory.
 
-## Separate fetching from consuming
+## The fetcher and the FIFO
 
-A FIFO preserves the order in which values are inserted. The producer appends pixels; the consumer removes the oldest available pixel.
+A FIFO hands values out in the order they went in. The fetcher adds pixels at one end, and the display takes the oldest pixel from the other.
 
-The queue decouples the cadence of tile fetching from the cadence of display output. Fetching one tile row gives us eight pixels, but the display consumes them one at a time.
+The queue lets the two run at different rates: fetching one tile row produces eight pixels at once, but the display takes them one at a time.
 
-[The pipeline source](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_pipeline.c) defines five fetch states:
+[`ppu_pipeline.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_pipeline.c) has five fetch states:
 
 ```text
 FS_TILE -> FS_DATA0 -> FS_DATA1 -> FS_IDLE -> FS_PUSH
 ```
 
-They select a tile identifier, read the two row bytes, wait, and attempt to push decoded pixels. The fetch state machine advances on alternating PPU ticks. Pixel output is attempted on every tick.
+They read the tile number, read the two row bytes, wait, and then try to add the decoded pixels to the queue. The fetcher moves on every other PPU tick; the display tries to take a pixel every tick.
 
-If the queue is too full to accept another tile row, `FS_PUSH` remains active. That is backpressure: the producer waits because the downstream stage has not consumed enough work.
+If the queue is too full for another row, the fetcher stays in `FS_PUSH` until there's room. That's backpressure: the producer waits for the consumer to catch up.
 
-## Count different kinds of progress separately
+## Four horizontal counters
 
-The context tracks several horizontal positions because they answer different questions:
+The context tracks four horizontal positions, each answering a different question:
 
-- `fetch_x`: where the next tile fetch is working.
-- `line_x`: how many FIFO outputs have been consumed on this line.
+- `fetch_x`: where the next tile fetch is.
+- `line_x`: how many pixels have been taken from the FIFO on this line.
 - `pushed_x`: how many visible pixels have reached the framebuffer.
-- `fifo_x`: the position used while preparing queued pixels.
+- `fifo_x`: the position used while preparing pixels for the queue.
 
-These are not redundant copies of one counter. Fine scrolling can require consuming pixels that are not displayed, so consumed and visible positions differ.
+They aren't copies of one counter. With fine scrolling, some pixels are taken from the queue and thrown away, so pixels consumed and pixels shown differ.
 
-For `SCX = 3`, the visible viewport begins three pixels into a background tile. The pipeline needs to account for that initial partial tile rather than jumping directly to the next eight-pixel boundary.
+With `SCX = 3`, the screen starts three pixels into a background tile. The pipeline has to handle that partial first tile rather than skipping to the next tile boundary.
 
-A useful debugging trace records all four counters together with queue depth. If a line finishes too early, we can ask whether the producer fetched too far, the consumer discarded too little, or the visible counter advanced incorrectly.
+When debugging, log all four counters and the queue length together. If a line ends too early, you can then tell whether the fetcher went too far, too few pixels were discarded, or the visible counter moved wrongly.
 
-## The queue’s representation is an implementation choice
+## How the queue is stored
 
-Each FIFO entry in this snapshot is individually allocated with `malloc()` and released with `free()`.
+gmboy allocates each FIFO entry with `malloc()` and frees it with `free()`.
 
-That is easy to explain as a linked queue, but it creates host allocation work for a tiny bounded pipeline. A fixed-capacity circular buffer would avoid those repeated allocations.
+That's easy to explain as a linked list, but it means a lot of allocation for a queue that never holds many pixels. A fixed-size circular buffer avoids it.
 
 Teaching example:
 
@@ -63,58 +63,56 @@ struct pixel_queue {
 unsigned insertion_index = (queue.head + queue.count) % 16;
 ```
 
-This is a proposed representation, not a replacement already applied to `gmboy`. Capacity, empty handling and push/pop invariants would need tests.
+This is a suggestion, not something gmboy does. It would need tests for capacity, empty pops and push/pop behaviour.
 
-The source rejects an empty pop by terminating the process. For development that makes a violated invariant obvious. A mature test harness should also tell us the scanline, tick and fetch state that led to it.
+gmboy exits the program if it tries to pop from an empty queue. That makes the bug obvious during development, but a proper test harness should also report the line, tick and fetch state that led to it.
 
-## Sprites begin with attributes, not pictures
+## Selecting sprites
 
-Object Attribute Memory, or OAM, holds entries describing sprite position, tile identifier and attributes. The snapshot stores 40 entries and prepares up to ten candidates for a scanline.
+Object Attribute Memory (OAM) holds each sprite's position, tile number and attributes. gmboy stores 40 entries and picks up to ten for each line.
 
-The stored coordinates have offsets. The code compares a sprite’s vertical position against `LY + 16` and subtracts eight when deriving its horizontal position.
+The stored coordinates are offset: the code compares a sprite's vertical position with `LY + 16` and subtracts 8 from its horizontal position. The raw OAM value isn't a screen coordinate.
 
-That is a reminder to distinguish a hardware register’s encoding from a screen coordinate. A raw OAM value is not necessarily the value you want in a host drawing API.
+[The OAM search](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_sm.c) goes through the entries and builds a linked list of selected sprites sorted by x. Sprites with the same x keep their original order.
 
-[The OAM search implementation](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_sm.c) scans the entries and creates an x-ordered linked list of selected candidates. Equal-x entries retain their existing order through the insertion logic.
+It skips sprites with x equal to zero before counting towards the ten-sprite limit. On hardware, off-screen sprites still count towards that limit, so this is a simplification.
 
-There is an accuracy caveat: it skips entries with an x value of zero before counting the scanline limit. Hardware selection rules need more careful treatment, because an off-screen object can still affect the selection limit. The code is useful for learning the mechanism, not a complete model of OAM evaluation.
+## Sprite priority
 
-## Merge using indices before forgetting them
+A sprite pixel with colour index 0 is transparent. A background pixel with index 0 is still drawn, in whatever shade the palette gives it.
 
-A sprite pixel with colour index zero is transparent. A background pixel with index zero can still be visibly mapped to a shade by its palette.
+So priority has to be decided using the colour indices, not the final colours.
 
-Those two facts make the original indices important. You cannot always make priority decisions using only the final 32-bit colour value.
+`fetch_sprite_pixels()` goes through the candidate pixels, applies horizontal flipping, skips transparent sprite pixels and decides whether the sprite should cover the background, using the background pixel's original index.
 
-`fetch_sprite_pixels()` checks candidate pixels, applies horizontal flipping, skips transparent sprite pixels and chooses whether the sprite can replace the background pixel. It uses the original background index for that priority decision.
-
-Teaching decision sequence:
+The rule:
 
 ```text
 no non-transparent sprite pixel -> keep background
-sprite requests background priority and background index is non-zero
+sprite asks to stay behind the background and background index is non-zero
     -> keep background
 otherwise -> use sprite palette and sprite index
 ```
 
-For a vertically flipped sprite, the source reverses the row selection. For a 16-pixel-high sprite, it clears the tile identifier’s low bit so that the two-tile object starts at the correct pair boundary.
+For vertically flipped sprites, gmboy reads the rows in reverse. For 16-pixel-tall sprites, it clears the low bit of the tile number so the two tiles start on an even pair.
 
-Build tests with overlapping objects, equal x coordinates, transparent pixels and differing palettes. A single visible sprite exercises very little priority logic.
+Test with overlapping sprites, sprites at the same x, transparent pixels and different palettes. One sprite on its own barely tests the priority logic.
 
-## The window is a separately positioned tile layer
+## The window layer
 
-The window is not an operating-system window. It is a second tile-map view used for elements such as status areas.
+The window has nothing to do with operating-system windows. It's a second tile map that can be placed over the background, typically for status bars.
 
-The code keeps a `window_line` counter because the window’s row progression is not necessarily the same as the background’s scrolled row. It also considers the hardware’s horizontal positioning offset when selecting a window tile.
+gmboy keeps a separate `window_line` counter, because the window's current row doesn't follow the background's scrolled row. It also applies the hardware's horizontal offset when choosing window tiles.
 
-The current implementation mixes `XRES` and `YRES` in parts of its window bounds checks and computes the shared tile row from background scroll state. Those are concrete areas to investigate with a window whose start position changes between lines.
+Some of the window bounds checks mix up `XRES` and `YRES`, and the shared tile row is calculated from the background's scroll values. Both are worth checking with a window whose position changes between lines.
 
-A good test image places recognisable patterns in both maps, enables the window partway down the screen and then varies its horizontal position. That separates map selection, pixel-row selection and visibility.
+For a test, put recognisable patterns in both maps, turn the window on partway down the screen and move it horizontally. That checks map selection, row selection and visibility separately.
 
-## DMA is work that continues after the write
+## OAM DMA
 
-A write to `0xFF46` supplies the high byte of the source address. [The DMA engine](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/dma.c) starts a transfer with a two-step delay, then copies one byte on each DMA step.
+Writing to `0xFF46` gives the high byte of a source address. [`dma.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/dma.c) starts the transfer after a two-step delay, then copies one byte per DMA step.
 
-For a start value of `0xC0`:
+Writing `0xC0`:
 
 ```text
 source:      0xC000 through 0xC09F
@@ -122,18 +120,14 @@ destination: 0xFE00 through 0xFE9F
 bytes:       0xA0 = 160
 ```
 
-The scheduler steps DMA once per machine cycle. Notice that the destination write goes directly to the PPU’s OAM helper. A CPU bus write to the same region would be rejected while DMA is active, so using the CPU-facing path for the DMA engine’s own write would block the transfer itself.
+The scheduler steps DMA once per machine cycle. DMA writes to OAM directly through a PPU helper, not through the CPU's bus path. That's necessary: the bus rejects CPU writes to OAM while DMA is running, so going through it would block DMA's own transfer. This is the point from part 2 about different devices needing different access.
 
-That is the resource-access distinction from part 2 made concrete.
+[On hardware](https://gbdev.io/pandocs/OAM_DMA_Transfer.html), the CPU is also restricted from other memory during DMA. gmboy blocks CPU access to OAM but not all the other DMG restrictions. The two-cycle start-up delay is gmboy's own model and should be tested separately from the 160-byte count.
 
-[The hardware DMA description](https://gbdev.io/pandocs/OAM_DMA_Transfer.html) also specifies CPU bus restrictions. This snapshot blocks CPU OAM accesses during transfer but does not model all DMG restrictions on the rest of the address space. Its two-cycle startup is part of its current model and should be validated separately from the 160-byte transfer count.
+## Exercises
 
-## Checkpoint
-
-Trace one tile row through the fetch states and FIFO. Then repeat with three initial pixels discarded for scrolling. Finally, start DMA and record which source byte reaches which OAM offset after every machine cycle.
-
-The central lesson is that state has an owner, access has a requester, and time determines when an effect becomes visible. That pattern extends well beyond emulation.
+Trace one tile row through the fetch states and the FIFO. Repeat with three pixels discarded for scrolling. Then start a DMA and record which source byte has been copied to which OAM address after each machine cycle.
 
 ## Continue the series
 
-[Previous: From bytes to a picture](/blog/game-boy-emulator-05-pixels/). [Next: Making the machine audible](/blog/game-boy-emulator-07-audio/).
+[Previous: Tiles, palettes and the display](/blog/game-boy-emulator-05-pixels/). [Next: Audio](/blog/game-boy-emulator-07-audio/).

@@ -1,32 +1,30 @@
 ---
-title: 'Game Boy emulator 5: from bytes to a picture'
+title: 'Game Boy emulator 5: tiles, palettes and the display'
 date: '2026-11-20'
-summary: 'Decode tile graphics, map a scrolling background and follow the LCD through a complete frame.'
+summary: 'Decoding tile graphics, scrolling the background map and stepping the LCD through a frame.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 5 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 5 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-A framebuffer is a rectangular array of final pixels. It is tempting to imagine that a Game Boy game fills one such array and hands it to a display library.
+A framebuffer is a rectangle of finished pixels, and it's tempting to assume a Game Boy game fills one and hands it to the screen.
 
-The original machine works at a different level. Its graphics data is organised into small tiles, maps, palettes and sprite attributes. The PPU combines those inputs while moving across the display.
+It doesn't. Graphics are stored as small tiles, tile maps, palettes and sprite attributes, and the PPU combines them while it moves across the display. This chapter covers how that data is stored, then how the display steps through a frame.
 
-We will start with the data representation, then attach it to the display’s timing.
+## Pixels are palette indices
 
-## A pixel can be an index rather than a colour
+The screen is 160 by 144 pixels. Tiles use four colour indices, so each pixel takes two bits.
 
-The visible monochrome display is 160 pixels wide and 144 pixels high. Its tile graphics use four colour indices, so each source pixel needs two bits.
-
-A tile is eight pixels by eight pixels. Its storage cost is:
+A tile is 8 by 8 pixels:
 
 ```text
 8 × 8 pixels × 2 bits = 128 bits = 16 bytes
 ```
 
-Those bytes are arranged as two bytes per row. The first byte supplies the lower bit of each pixel’s index; the second supplies the upper bit. Bit 7 describes the leftmost pixel.
+Each row is two bytes. The first holds the low bit of each pixel's index and the second holds the high bit. Bit 7 is the leftmost pixel.
 
 Teaching example:
 
@@ -39,11 +37,9 @@ u8 decode_pixel(u8 low_plane, u8 high_plane, unsigned x) {
 }
 ```
 
-The function returns an index from zero to three, not an SDL colour value.
+This returns an index from 0 to 3, not a screen colour.
 
-## Work through one row
-
-Use these deliberately small inputs:
+## Decoding one row
 
 ```text
 low plane:  01010101
@@ -51,33 +47,33 @@ high plane: 00110011
 indices:    0 1 2 3 0 1 2 3
 ```
 
-For the first pixel, both plane bits are zero. For the second, the lower bit is one and the upper bit is zero. For the third, the lower bit is zero and the upper bit is one.
+The first pixel has both bits clear. The second has only the low bit set, and the third only the high bit.
 
-This example distinguishes the bit planes. A row of all zeroes cannot reveal a swapped-plane bug because both incorrect and correct implementations produce the same result.
+Test with a row like this one, where the two bytes differ. A row of zeros gives the same result even if you mix up the low and high bytes.
 
-[The tile-data reference](https://gbdev.io/pandocs/Tile_Data.html) describes the hardware representation. In `gmboy`, the active graphics path combines the two bytes in `pipeline_fifo_add()`.
+[Pan Docs describes the tile format](https://gbdev.io/pandocs/Tile_Data.html). In gmboy, `pipeline_fifo_add()` combines the two bytes.
 
-## A palette maps indices to display values
+## Palettes
 
-A palette register packs four two-bit entries into one byte. To obtain the shade selected for an index:
+A palette register packs four 2-bit entries into one byte. To get the shade for an index:
 
 ```c
 u8 shade = (palette >> (2 * index)) & 0x03;
 ```
 
-That shade can then select a 32-bit output colour.
+The shade then picks a 32-bit output colour.
 
-[The LCD module](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/lcd.c) stores background and sprite colour arrays. A register write updates those arrays so that the pixel path can use them directly.
+[`lcd.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/lcd.c) keeps arrays of background and sprite colours, and updates them whenever a palette register is written, so drawing can use them directly.
 
-There is a useful boundary mistake here. The first entry uses `palette_data & 0x11`, whereas a two-bit field requires `0x03`. The former mask can produce values outside a four-entry array. It should not be copied into a teaching implementation.
+There's a bug in it: the first entry uses `palette_data & 0x11` instead of `& 0x03`. `0x11` can produce values past the end of a four-entry array. Don't copy it.
 
-For tests, try palette bytes with different values in every field. Verify the index extraction before testing a whole image.
+Test with a palette byte that has a different value in every field, and check the extraction before testing whole images.
 
-## A map chooses which tile to draw
+## The background map
 
-The background map is a grid of tile identifiers. Each map row contains 32 entries. The display observes a smaller viewport within the resulting background.
+The background map is a grid of tile numbers, 32 per row. The screen shows a window onto part of it.
 
-For a teaching background fetch:
+A teaching version of the background fetch:
 
 ```text
 world_x = (screen_x + scroll_x) modulo 256
@@ -88,48 +84,44 @@ map_offset = map_row × 32 + map_column
 pixel_row_in_tile = world_y modulo 8
 ```
 
-The source stores several of these values in byte fields. Assigning the sums into those fields supplies the wraparound implicitly.
+gmboy stores several of these in byte-sized fields, so the modulo 256 happens automatically when the sum is assigned. Writing the wrap out explicitly is clearer while you're learning; whether to rely on byte truncation in real code is a style choice.
 
-A straightforward implementation can express the wrap explicitly while explaining the idea, then decide whether narrowing is a sufficiently clear representation in production code.
+## Signed and unsigned tile numbers
 
-## Tile identifiers have two addressing interpretations
+A bit in the LCDC register chooses whether background and window tile numbers are unsigned or signed.
 
-LCDC selects either an unsigned tile-data mode or a signed mode for the background and window.
-
-In a teaching implementation, the signed mode is particularly clear when written relative to `0x9000`:
+The signed mode is easiest to read relative to `0x9000`:
 
 ```c
 u16 tile_address = 0x9000 + (int8_t)tile_id * 16;
 ```
 
-The unsigned mode uses `0x8000 + tile_id * 16`.
+Unsigned mode uses `0x8000 + tile_id * 16`.
 
-The repository expresses the signed interpretation differently. Its base becomes `0x8800`, and it adds 128 to the eight-bit tile identifier before multiplying. The byte wraparound is part of that translation.
+gmboy does the signed case differently: it uses a base of `0x8800`, adds 128 to the tile number and lets it wrap as a byte, then multiplies.
 
-For example, identifier zero becomes 128, producing `0x8800 + 128 × 16 = 0x9000`. Identifier `0xFF` becomes 127 after byte wraparound, selecting `0x8FF0`, which corresponds to signed negative one.
+Tile number 0 becomes 128, giving `0x8800 + 128 × 16 = 0x9000`. Tile number `0xFF` wraps to 127, giving `0x8FF0`, which is the same as signed minus one. Both versions give the same addresses; working through a few values like this shows why.
 
-Being able to prove that equivalence is more valuable than memorising either expression.
+## The display modes
 
-## The display is a state machine
+The PPU doesn't draw the whole image in one call. [Its state machine](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_sm.c) steps through these modes:
 
-The PPU does not render the entire image in one call. [Its state machine](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ppu_sm.c) moves through these modes:
+| Mode             | What happens                                |
+| ---------------- | ------------------------------------------- |
+| OAM search       | Picks the sprites on the current line       |
+| Pixel transfer   | Fetches and combines pixels                 |
+| Horizontal blank | Waits out the rest of the line              |
+| Vertical blank   | Runs the hidden lines before the next frame |
 
-| Mode             | Responsibility                                           |
-| ---------------- | -------------------------------------------------------- |
-| OAM search       | Select sprite candidates for the current scanline        |
-| Pixel transfer   | Fetch and combine pixels                                 |
-| Horizontal blank | Finish the remainder of the scanline                     |
-| Vertical blank   | Complete the non-visible scanlines before the next frame |
+gmboy uses 456 ticks per line and 154 lines per frame, of which the first 144 are visible. OAM search ends after 80 ticks, and pixel transfer ends once 160 pixels have been output.
 
-The source uses 456 ticks per scanline and 154 scanlines per frame. The first 144 lines are visible. It changes from OAM search after 80 ticks, then leaves pixel transfer when 160 pixels have been pushed.
+So pixel transfer lasts as long as the pipeline takes to produce the line, rather than being one call that draws everything.
 
-That last condition matters. Pixel transfer is associated with work completed by the pipeline, rather than being a single call that paints the whole frame.
+[Pan Docs' rendering section](https://gbdev.io/pandocs/Rendering.html) has the hardware timing. gmboy doesn't implement all the memory-access restrictions or the display-off behaviour described there.
 
-The hardware timing overview is described in [Pan Docs’ rendering chapter](https://gbdev.io/pandocs/Rendering.html). The snapshot does not implement every access restriction or display-disable transition described there.
+## Frame rate
 
-## Derive the frame duration
-
-The source constants give us:
+From gmboy's constants:
 
 ```text
 456 ticks per line × 154 lines = 70,224 ticks per frame
@@ -137,37 +129,35 @@ The source constants give us:
 frames per second ≈ 59.73
 ```
 
-These are calculated values, not a benchmark result from running this emulator.
+That's calculated from the constants, not measured.
 
-The host pacing code targets an integer `1000 / 60` milliseconds. That is a separate approximation and does not preserve the fractional duration above. It is possible to have internally consistent display transitions while presenting them at a slightly incorrect wall-clock rate.
+The front end waits a whole number of milliseconds per frame (`1000 / 60`), which doesn't match 59.73 frames per second exactly. The display can step through its modes correctly and still be shown at a slightly wrong real-world speed. Part 7 comes back to this with audio.
 
-We will return to pacing when discussing the audio queue and host front end.
+## The output buffer
 
-## Pixels eventually need somewhere to go
-
-[The PPU context](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/include/ppu.h) owns a `video_buffer` of 32-bit pixels. The active pipeline writes each completed pixel at:
+[The PPU context](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/include/ppu.h) owns `video_buffer`, an array of 32-bit pixels. Each finished pixel is written to:
 
 ```text
 buffer index = visible_x + scanline × 160
 ```
 
-This is the natural seam between emulated display logic and host rendering. SDL should present that buffer; it should not decide how a Game Boy tile is addressed.
+This buffer is where the emulated display hands over to the host. SDL should just show it; it shouldn't know anything about how tiles are addressed.
 
-The allocation in the snapshot uses `sizeof(32)`. On a typical host that happens to be the expected size, but `sizeof(*ctx.video_buffer)` states the actual allocation contract. It also remains correct if the buffer’s element type changes.
+gmboy allocates it with `sizeof(32)`. That happens to be the right size on most hosts, but `sizeof(*ctx.video_buffer)` says what's actually meant and stays correct if the pixel type changes.
 
-## Checkpoint
+## Exercises
 
-Before introducing sprites, verify:
+Before adding sprites, test:
 
 1. One row with indices `0 1 2 3 0 1 2 3`.
 2. A tile whose top and bottom rows differ.
-3. A map containing distinct neighbouring tile identifiers.
+3. A map with different tile numbers next to each other.
 4. A scroll value that crosses a tile boundary.
-5. Signed tile identifiers zero, `0x7F`, `0x80` and `0xFF`.
-6. A full frame’s line and tick counts.
+5. Signed tile numbers 0, `0x7F`, `0x80` and `0xFF`.
+6. The line and tick counts for a full frame.
 
-This ordering separates representation errors from scheduling errors. A bad picture should lead to a smaller question than “is the PPU broken?”
+Doing them in this order separates data-format bugs from timing bugs, so a wrong picture leads to a specific question rather than "the PPU is broken".
 
 ## Continue the series
 
-[Previous: Time, timers and interrupts](/blog/game-boy-emulator-04-time/). [Next: Pixels arriving on time](/blog/game-boy-emulator-06-pipeline/).
+[Previous: Timers and interrupts](/blog/game-boy-emulator-04-time/). [Next: The pixel pipeline, sprites and DMA](/blog/game-boy-emulator-06-pipeline/).

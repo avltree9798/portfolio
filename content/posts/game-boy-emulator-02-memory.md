@@ -1,46 +1,46 @@
 ---
-title: 'Game Boy emulator 2: memory is an interface'
+title: 'Game Boy emulator 2: memory and the bus'
 date: '2026-11-20'
-summary: 'Build a memory bus, understand memory-mapped devices, load cartridge data and reason about bank switching.'
+summary: 'Building a memory bus, memory-mapped devices, loading cartridge data and bank switching.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 2 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 2 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-A web application might route `/users/42` to a handler. A Game Boy routes `0xFF04` to a timer register. The representation differs, but the design question is familiar: which component owns this request?
+A web app routes `/users/42` to a handler. The Game Boy routes `0xFF04` to a timer register. The question in both cases is which component handles the request.
 
-The memory bus makes that routing explicit. It is the seam that lets the CPU access devices without knowing their internal data structures.
+The memory bus answers it. The CPU reads and writes addresses through the bus, and never needs to know how each device stores its data.
 
-## An address is not necessarily an array index
+## The address map
 
-A 16-bit address can represent 65,536 different values. That does not mean the machine is one flat 64 KiB array.
+A 16-bit address has 65,536 possible values, but the machine isn't one flat 64 KiB array.
 
-Some addresses select ordinary RAM. Others select cartridge data, display memory or a device register. Writing a device register can change behaviour instead of storing a byte for a later read.
+Some addresses are ordinary RAM. Others are cartridge data, display memory or device registers, and writing a device register can change how the device behaves rather than just storing a byte.
 
-The main ranges in [the bus implementation](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/bus.c) are:
+The main ranges in [`bus.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/bus.c) are:
 
-| Address range    | Responsibility                    |
+| Address range    | Handled by                        |
 | ---------------- | --------------------------------- |
 | `0000` to `7FFF` | Cartridge ROM and mapper controls |
 | `8000` to `9FFF` | Video RAM                         |
-| `A000` to `BFFF` | Cartridge RAM when provided       |
+| `A000` to `BFFF` | Cartridge RAM, if present         |
 | `C000` to `DFFF` | Work RAM                          |
-| `E000` to `FDFF` | Hardware work-RAM mirror          |
+| `E000` to `FDFF` | Mirror of work RAM on hardware    |
 | `FE00` to `FE9F` | Sprite attributes                 |
-| `FF00` to `FF7F` | Memory-mapped device registers    |
+| `FF00` to `FF7F` | Device registers                  |
 | `FF80` to `FFFE` | High RAM                          |
 | `FFFF`           | Interrupt enable register         |
 
-There are additional unusable ranges between these regions. [Pan Docs describes the hardware memory map](https://gbdev.io/pandocs/Memory_Map.html); the table above is a map to responsibilities, not a claim that this source implements every access rule.
+There are also unusable ranges between these. [Pan Docs has the full hardware memory map](https://gbdev.io/pandocs/Memory_Map.html); the table shows which part of gmboy handles each range, not every access rule.
 
-For example, the current echo-RAM branch returns zero and ignores writes. The hardware region mirrors work RAM. That difference is small in code and significant to software that accesses it.
+One example of a gap: gmboy's echo-RAM range returns zero and ignores writes, while on hardware it mirrors work RAM. It's a small difference in the code, but software that uses that range will behave differently.
 
-## Keep the CPU on the public interface
+## Keep the CPU behind the bus
 
-Consider a teaching example for a load from memory:
+A teaching example of a load from memory:
 
 ```c
 u16 address = cpu_read_reg(RT_HL);
@@ -48,15 +48,15 @@ u8 value = bus_read(address);
 cpu_set_reg(RT_A, value);
 ```
 
-The CPU does not reach into a cartridge buffer or a PPU array. That gives us one place to model overlays, side effects and access restrictions.
+The CPU never touches the cartridge buffer or a PPU array directly, so overlays, side effects and access restrictions all live in one place.
 
-It also makes testing easier. A CPU test can supply a controlled bus, while a bus test can check address boundaries without decoding instructions.
+It also makes testing easier. CPU tests can use a fake bus, and bus tests can check address boundaries without decoding instructions.
 
-There is a qualification. An emulated device may need a different view of memory from the CPU. Later, if CPU reads of video RAM become restricted during rendering, the PPU must still be able to fetch its own data. A single function called `bus_read()` is convenient initially, but should not silently imply identical permissions for every bus master.
+One caveat: other devices may need different access from the CPU. If you later block CPU reads of video RAM during rendering, the PPU still has to read its own data. A single `bus_read()` is fine to start with, but it shouldn't imply every device has the same permissions.
 
-## Trace one write all the way through
+## Tracing a write to a device
 
-A write to `0xFF46` takes this path:
+A write to `0xFF46` goes:
 
 ```text
 CPU instruction
@@ -66,54 +66,54 @@ CPU instruction
         dma_start(value)
 ```
 
-Nothing about that operation is equivalent to `memory[address] = value`. It starts a transfer that continues over subsequent cycles.
+That isn't `memory[address] = value`. It starts a transfer that carries on over the following cycles.
 
-The same pattern appears elsewhere. `0xFF00` selects joypad input lines. `0xFF04` resets the divider when written. `0xFF50` controls the boot ROM mapping. Audio registers route into the APU.
+Other registers work the same way. `0xFF00` selects which joypad lines to read, writing `0xFF04` resets the divider, `0xFF50` turns off the boot ROM, and the audio registers go to the APU.
 
-That is memory-mapped I/O: device operations exposed through the same read and write vocabulary as memory.
+This is memory-mapped I/O: devices controlled with the same reads and writes as memory.
 
-## Bytes have an order
+## Byte order
 
-The CPU can operate on 16-bit values while the bus transfers individual bytes. `bus_read16()` reads the low byte first and combines the second byte as the upper half.
+The CPU works with some 16-bit values, but the bus moves one byte at a time. `bus_read16()` reads the low byte first, then the high byte.
 
-For bytes `0x34` and `0x12` at successive addresses:
+For `0x34` followed by `0x12`:
 
 ```text
 value = 0x34 | (0x12 << 8)
       = 0x1234
 ```
 
-This is little-endian storage. It describes byte order in emulated memory, not a licence to assume anything about the host’s byte order or C structure layout.
+This is little-endian order in emulated memory. It says nothing about the host's byte order or how C lays out structures.
 
-The snapshot’s `bus_write16()` writes the high-address byte first. The final contents can look right even if the order of bus transactions differs from an instruction’s hardware behaviour. Keep those two correctness questions separate when adding cycle-level accuracy.
+gmboy's `bus_write16()` writes the high byte first. The memory ends up with the right contents, but the order of bus accesses differs from hardware. That order matters once you start modelling individual cycles, so it's worth checking separately from the final values.
 
-## A cartridge is a device with state
+## Loading a cartridge
 
-[The cartridge loader](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/cart.c) reads a file, retains its bytes and interprets a header near `0x0100`. The header describes details such as the cartridge type and declared ROM and RAM sizes.
+[`cart.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/cart.c) reads the file, keeps its bytes and reads the header near `0x0100`, which includes the cartridge type and the ROM and RAM sizes.
 
-The current loader casts a pointer into that byte buffer to a `rom_header` structure. It is concise, but file formats should ideally be decoded using explicit offsets and bounds checks. A short file is not guaranteed to contain even the header, and host structure layout is not the file format’s specification.
+It reads the header by casting a pointer into the byte buffer to a `rom_header` structure. That's short, but it's safer to read each field at its offset with bounds checks: a short file might not contain a full header, and a C structure's layout isn't the file format.
 
-The loader also changes the title bytes to insert a terminator. A more robust design copies a bounded title into a separate string, leaving the original cartridge bytes unchanged.
+The loader also writes a terminator into the title bytes. Copying the title into a separate, bounded string would leave the cartridge data unchanged.
 
-A safer loading sequence would be:
+A safer loader would:
 
 1. Open the file in binary mode.
-2. Obtain and validate the actual byte count.
-3. Reject files too short for the fields we will read.
-4. Decode each header field explicitly.
-5. Check that the requested mapper and sizes are supported.
-6. Allocate memory and check allocation results.
-7. Validate the header checksum against its stored byte.
+2. Get and check the actual file size.
+3. Reject files too short for the fields it reads.
+4. Read each header field explicitly.
+5. Check the mapper type and sizes are supported.
+6. Allocate memory and check that it succeeded.
+7. Compare the computed header checksum with the stored one.
 
-That last comparison is missing from the printed verdict in this snapshot. The code computes a checksum, then labels the result based on whether its low byte is non-zero, rather than comparing it with the header checksum. A reassuring message is only useful if its condition expresses the property we intended to verify.
+gmboy doesn't do the last step properly. It computes a checksum, then prints a pass or fail based on whether the low byte is non-zero, instead of comparing it with the checksum in the header. The message can say "passed" for a corrupt header.
 
-## Bank switching is address translation
+## Bank switching
 
-Why bank a cartridge at all? A program can be larger than the window through which the CPU sees it.
+Cartridges can be bigger than the address range the CPU can see, so they use banks.
 
-A memory bank controller, or MBC, changes which portion of the cartridge appears in that window. This implementation recognises the MBC1 type range and keeps a pointer for the selected upper ROM bank.
+A memory bank controller (MBC) chooses which part of the cartridge appears in that range. gmboy recognises the MBC1 types and keeps a pointer to the selected upper ROM bank.
 
-For a simple example, selecting bank 2 maps CPU address `0x4000` to file offset:
+For example, selecting bank 2 maps CPU address `0x4000` to this file offset:
 
 ```text
 bank start = 2 × 0x4000 = 0x8000
@@ -121,26 +121,24 @@ within-bank offset = 0x4000 - 0x4000 = 0
 file offset = 0x8000
 ```
 
-A write into a ROM address range changes mapper state. It does not rewrite ROM data.
+Writing to a ROM address changes the mapper's state; it doesn't change the ROM.
 
-[The full MBC1 rules](https://gbdev.io/pandocs/MBC1.html) combine a lower bank register, a secondary register and a mode bit. The repository implements a smaller subset. In particular, its upper-bank pointer uses the lower register directly, and its lower ROM window stays fixed. Do not interpret the presence of the MBC1 label as full large-cartridge banking support.
+[Full MBC1 behaviour](https://gbdev.io/pandocs/MBC1.html) combines a lower bank register, a second register and a mode bit. gmboy implements part of it: the upper-bank pointer uses only the lower register, and the lower ROM range never changes. Large cartridges won't work fully, despite the MBC1 label.
 
-There is also an ordering lesson in the bank-zero handling. The code changes a literal zero to one before masking the value to five bits. An input such as `0x20` can therefore become zero after that check. The effective bank rules need to be expressed and tested together.
+The bank-zero check has an ordering bug. The code turns a zero into one before masking the value to five bits, so a value like `0x20` passes the check and then becomes zero. The rules need to be applied, and tested, in the right order.
 
-## Saved data has a format too
+## Save files
 
-Battery-backed RAM lives in host files ending in `.battery`. The current save function writes one 8 KiB selected RAM bank. That is not the same as serialising every allocated bank, and it does not identify which bank those bytes belong to.
+Battery-backed RAM is saved to `.battery` files. gmboy writes one 8 KiB RAM bank: the selected one. That doesn't save the other banks, and the file doesn't record which bank it holds.
 
-For a more complete design, define the saved state explicitly. Include all relevant banks in a stable order, check reads and writes, and decide how to avoid a partially written save replacing a valid one.
+A better save format would include every bank in a fixed order, check that reads and writes succeed, and avoid replacing a good save with a half-written one.
 
-These are familiar persistence questions. The emulator simply makes them visible at a much smaller scale.
+## Exercises
 
-## Checkpoint
+Write boundary tests for the addresses on either side of each range in the table. Then build a fake cartridge where each bank is filled with a different value. Reading the same CPU address after switching banks should give a predictable result.
 
-Build a boundary table for addresses immediately before and after each bus region. Then design a fake cartridge whose banks contain different repeated values. Reading the same CPU address after a bank change should produce a predictable difference.
-
-Those tests isolate routing and translation before a game’s control flow makes the symptoms difficult to interpret.
+These tests catch routing and banking bugs before a game's code makes them hard to diagnose.
 
 ## Continue the series
 
-[Previous: A machine in miniature](/blog/game-boy-emulator-01-foundations/). [Next: Teaching a CPU to execute](/blog/game-boy-emulator-03-cpu/).
+[Previous: The parts of the machine](/blog/game-boy-emulator-01-foundations/). [Next: Executing instructions](/blog/game-boy-emulator-03-cpu/).

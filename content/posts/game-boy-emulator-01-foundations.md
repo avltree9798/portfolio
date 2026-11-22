@@ -1,81 +1,77 @@
 ---
-title: 'Game Boy emulator 1: a machine in miniature'
+title: 'Game Boy emulator 1: the parts of the machine'
 date: '2026-11-20'
-summary: 'Start with an ordinary software engineer’s mental model, then connect the CPU, memory, graphics and audio around a shared clock.'
+summary: 'A tour of the CPU, memory, graphics and audio, and the shared clock that keeps them in step.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 1 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 1 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-You do not need an electrical engineering background to begin an emulator. You need a willingness to make state explicit and to ask what happens next.
+A good first model of the Game Boy is a small program with a fixed amount of memory and a handful of variables it keeps updating, plus a display and a sound generator that read those variables as time passes.
 
-Imagine a small service with a fixed amount of memory, a handful of mutable variables and a program that updates them. Now add a display and a sound generator that observe those variables as time advances. That is a useful first model of the Game Boy.
+The catch is that the display and sound don't wait for the program to finish anything. They run alongside the CPU, so a write that lands just before a particular display tick can give a different result from the same write a few ticks later. Most of the work in an emulator comes from getting that timing right.
 
-The difficult part is that those observers do not wait for an entire program to finish. They keep running while the CPU executes. A write that happens before a particular display tick can produce a different result from the same write a few ticks later.
+## What gmboy contains
 
-That makes an emulator an unusually approachable introduction to systems work. It gives us a bounded machine in which interfaces, scheduling, representation and observability all matter.
+`gmboy` is a C application with an SDL2 front end. The source is small enough to follow from file to file, but it still has a CPU, a cartridge interface, graphics, input and audio.
 
-## What we are building
+The series explains that implementation, including where it falls short. It doesn't claim full hardware compatibility: a game reaching its title screen, for example, doesn't prove every instruction or timing detail is right.
 
-`gmboy` is a C application with an SDL2 front end. Its source is small enough to trace across files, but substantial enough to include a CPU, a cartridge interface, graphics, input and audio.
+The target is the original monochrome Game Boy, often called the DMG. The boot ROM loader handles some colour-model cases, but the rest of the emulator is DMG-only.
 
-This series explains that implementation and uses its limitations as learning opportunities. It is not a claim of complete hardware compatibility. A program reaching a title screen, for example, would not establish that every instruction or timing edge is correct.
+## The components, in software terms
 
-For this series, think of the target as the original monochrome Game Boy, often called the DMG. The boot ROM loader contains some colour-model handling, but that does not turn the rest of the emulator into a complete colour-model implementation.
+| Component      | What it does                             | State it owns                          |
+| -------------- | ---------------------------------------- | -------------------------------------- |
+| CPU            | Executes the next instruction            | Registers, program counter, flags      |
+| Bus            | Routes an address to the right device    | The routing rules                      |
+| Cartridge      | Provides program data and optional saves | ROM and banking state                  |
+| PPU            | Produces display pixels over time        | Video RAM, scanline and pixel pipeline |
+| Timer          | Derives counters from the machine clock  | Divider and timer registers            |
+| APU            | Generates audio                          | Channel timers and mixer state         |
+| Host front end | Shows output and collects input          | SDL windows, events and audio device   |
 
-## Translate unfamiliar nouns into familiar responsibilities
+A register is a small named storage location. The program counter, `PC`, holds the address of the next instruction. The bus is how components read and write the machine's address space. An interrupt is a request for the CPU to run a handler, which it does only when the relevant settings allow.
 
-| Component      | Software responsibility                     | State it owns                          |
-| -------------- | ------------------------------------------- | -------------------------------------- |
-| CPU            | Execute the next instruction                | Registers, program counter, flags      |
-| Bus            | Route an address to the right device        | The routing rules                      |
-| Cartridge      | Expose program data and optional saved data | ROM and banking state                  |
-| PPU            | Produce display pixels over time            | Video RAM, scanline and pixel pipeline |
-| Timer          | Derive counters from the machine clock      | Divider and timer registers            |
-| APU            | Generate audio signals                      | Channel timers and mixer state         |
-| Host front end | Present output and collect input            | SDL windows, events and audio device   |
+Each of these maps to fields in a C structure, which we'll look at as we go.
 
-A register is simply a small named storage location. The program counter, `PC`, records where the CPU will fetch its next instruction. A bus is the interface through which components access the machine’s address space. An interrupt is a request for the CPU to run a handler when the relevant controls permit it.
+## Reading the C
 
-Those definitions are deliberately mechanical. They become less mysterious when we can point to the C fields that hold them.
+If you usually write Python, TypeScript or Java, these conventions will help:
 
-## A small C reading key
+- `u8` and `u16` are this project's names for 8-bit and 16-bit unsigned integers.
+- A structure groups named fields, like a small record.
+- A pointer such as `cpu_context *ctx` refers to a structure stored elsewhere; `ctx->regs` reads its `regs` field.
+- `&` keeps bits set in both values, `|` keeps bits set in either, and `<<` and `>>` shift bits left or right. `value << 8` moves a byte into the upper half of a 16-bit value.
+- A `static` variable or function at file level is private to that C file.
 
-If your usual language is Python, TypeScript or Java, a few C conventions will help you follow the examples:
+For each value, it's enough to know how wide it is, who owns it and which functions change it.
 
-- `u8` and `u16` are this project’s aliases for unsigned integers with eight and sixteen bits.
-- A structure groups named fields, much like a small record.
-- A pointer such as `cpu_context *ctx` refers to a structure stored elsewhere. `ctx->regs` accesses its `regs` field.
-- `&` combines matching one bits, `|` combines either one bit, and `<<` or `>>` shifts bits left or right. In an address calculation, `value << 8` moves a byte into the upper half of a 16-bit value.
-- A file-level `static` object keeps state private to that C file. A `static` function is also private to its translation unit.
+## The entry point
 
-You do not need to memorise C’s entire type system. Focus on the width of a value, who owns its storage and which function is allowed to change it.
+[`main.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/gmboy/main.c) calls `emu_run()` straight away.
 
-## Start at the real entry point
+[`emu.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/emu.c) then:
 
-Open [the entry point](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/gmboy/main.c). It delegates immediately to `emu_run()`.
+1. Checks that a cartridge path was given.
+2. Loads a boot ROM, if one was given.
+3. Loads the cartridge.
+4. Starts the SDL user interface, which also starts audio.
+5. Starts a CPU worker thread.
+6. Loops, handling host events and drawing each finished frame.
 
-Follow that call into [the emulator coordinator](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/emu.c). The startup sequence is:
+The worker sets up the timer, CPU and PPU, then calls `cpu_step()` repeatedly.
 
-1. Check that a cartridge path was supplied.
-2. Optionally load a boot ROM.
-3. Load the cartridge.
-4. Initialise the SDL user interface, which also initialises audio.
-5. Start a CPU worker thread.
-6. Keep processing host events and presenting newly completed frames.
+`emu.c` starts the components but leaves the details to them: it never decodes an instruction or picks a tile. That split is what keeps each file small enough to read.
 
-The worker initialises the timer, CPU and PPU before repeatedly calling `cpu_step()`.
-
-Notice the distinction between ownership and coordination. The coordinator starts the components, but it does not decode an instruction or choose a tile. That division keeps individual files understandable.
-
-## A clock is an input to the system
+## The shared clock
 
 The most important function to read early is `emu_cycles()`.
 
-Its argument counts CPU machine cycles. For each requested machine cycle, it performs four smaller ticks. Each smaller tick advances the timer, PPU and APU. DMA advances once after those four ticks.
+Its argument is a number of CPU machine cycles. Each machine cycle is four smaller ticks, and each tick advances the timer, PPU and APU. DMA advances once after the four ticks.
 
 ```text
 one machine cycle
@@ -86,50 +82,44 @@ one machine cycle
   DMA step
 ```
 
-This gives the machine a shared notion of progress. A CPU handler cannot consume time without the display and sound generators also advancing.
+Because every instruction reports its time through this function, the CPU can't move forward without the display and sound moving forward too.
 
-A useful analogy is an event-driven simulation. The clock does not ask the operating system to sleep after every instruction. It advances a model. The front end can regulate how quickly that model runs relative to a person watching the screen.
+This works like a simulation: advancing the clock updates the model rather than waiting in real time. Matching the speed a person sees on screen is the front end's job. Part 4 covers machine cycles, ticks and real time in detail.
 
-In part 4 we will trace the exact distinction between these machine cycles, individual ticks and wall-clock milliseconds.
+## Building it
 
-## Build the boundary before the details
+The [Makefile](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/Makefile) compiles the sources into `build/gmboy` and links SDL2, SDL2_image and SDL2_ttf from fixed Homebrew paths.
 
-The checked-in [Makefile](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/Makefile) compiles the C files into `build/gmboy`. It links SDL2, SDL2_image and SDL2_ttf using specific Homebrew installation paths.
-
-That is a property of this snapshot, not a portable dependency discovery mechanism. On another machine, inspect and adapt the include and library paths before expecting `make` to work. Installing a newer SDL package does not guarantee the versioned paths in that file will exist.
-
-The intended invocation is:
+Those paths are hard-coded, so on another machine you'll need to edit the include and library paths first. A newer SDL install won't necessarily put files where the Makefile expects them.
 
 ```sh
 make
 ./build/gmboy roms/example.gb
 ```
 
-With an independently supplied boot ROM:
+With a boot ROM you supply yourself:
 
 ```sh
 ./build/gmboy roms/example.gb /path/to/bootrom.bin
 ```
 
-Use a small homebrew or diagnostic program while learning. You want to understand what the program is asking the hardware to do. Neither this series nor the portfolio distributes game or boot ROM binaries.
+While learning, use a small homebrew or test program so you can tell what it's asking the hardware to do. This series doesn't provide game or boot ROM files, and I haven't tested these commands on other platforms.
 
-We are reading the checked-in source, not reporting a newly measured compatibility result or claiming these commands were tested across platforms.
+## Starting with and without a boot ROM
 
-## Booting and starting after boot are different contracts
+With a boot ROM, [CPU initialisation](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/cpu.c) starts `PC` at `0x0000`. Without one, it sets the registers to the values the boot ROM would have left and starts at `0x0100`.
 
-With a boot ROM present, [CPU initialisation](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/cpu.c) starts `PC` at `0x0000`. Without one, it seeds a selection of post-boot values and starts at `0x0100`.
+`0x` marks a hexadecimal number. Each hex digit is four bits, so `0x0100` is 256 in decimal. Hex makes the structure of addresses and bit fields easier to see, so the series uses it throughout.
 
-`0x` introduces a hexadecimal number. Each hexadecimal digit represents four bits, so `0x0100` is decimal 256. We will use hexadecimal because it exposes the structure of addresses and bit fields clearly.
+The bus checks the boot ROM before the cartridge, so at first the low addresses return boot code instead of game code. Writing to the boot-control register later switches that off.
 
-The bus consults the boot ROM before the cartridge. Initially, the same address can therefore refer to boot code rather than game code. A write through the boot-control register later removes that overlay.
+So the same address can mean different things depending on device state. Part 2 builds on this.
 
-This is an important systems idea: an address does not necessarily identify one immutable physical resource. Its interpretation can depend on device state.
+The boot ROM loader accepts one colour-model file size and layout, but graphics and memory are still DMG-only. A feature's name in the code isn't proof it's supported end to end; follow where it's actually used.
 
-The current boot support also contains a limitation worth noticing early. The loader accepts a particular colour-model size and mapping, while the graphics and memory system remain primarily DMG-oriented. Treat a feature’s integration path as evidence of support, rather than relying only on its name.
+## Exercise: trace the threads
 
-## Your first investigation
-
-Before implementing an instruction, draw the following call path on paper:
+Before implementing any instructions, sketch this call path:
 
 ```text
 main
@@ -144,20 +134,20 @@ main
         emu_cycles
 ```
 
-Then answer three questions:
+Then answer:
 
 - Which thread writes the display buffer?
 - Which thread reads it?
-- What prevents those accesses from overlapping?
+- What stops them doing both at once?
 
-The snapshot has shared fields and buffers, but no explicit synchronisation around that hand-off. That is a source-level concern, not evidence that every run will visibly fail. We will return to a safer frame ownership model in part 8.
+In this snapshot, nothing does: the threads share fields and buffers without any locking around the hand-off. That doesn't mean every run will visibly break, but it is a real problem. Part 8 replaces it with a safer way to pass frames between threads.
 
-## Checkpoint
+## Summary
 
-You should now be able to explain why an emulator needs more than an instruction interpreter, identify the host-facing boundary, and follow one unit of emulated time across the components.
+An emulator needs more than an instruction interpreter. You should now be able to point to where the emulator meets the host, and follow one unit of emulated time through every component.
 
-The next step is to give those components a common address space.
+Next, those components need a shared address space.
 
 ## Continue the series
 
-[Next: Memory is an interface](/blog/game-boy-emulator-02-memory/).
+[Next: Memory and the bus](/blog/game-boy-emulator-02-memory/).

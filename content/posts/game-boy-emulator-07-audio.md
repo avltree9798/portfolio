@@ -1,63 +1,59 @@
 ---
-title: 'Game Boy emulator 7: making the machine audible'
+title: 'Game Boy emulator 7: audio'
 date: '2026-11-20'
-summary: 'Generate pulse, wave and noise signals, convert emulated ticks into audio samples and handle the audio callback boundary.'
+summary: 'Pulse, wave and noise channels, turning emulated ticks into audio samples, and the audio callback.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 7 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 7 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-Audio forces us to connect two different notions of time: millions of emulated ticks per second and a host device asking for a block of samples by a deadline.
+Audio has to connect two kinds of time: millions of emulated ticks per second, and a sound card asking for a block of samples before a deadline. So this chapter is as much about generating and buffering samples as about sound.
 
-The APU chapter is therefore about signal generation and buffering as much as it is about sound.
+## Checking samples before listening
 
-## Start with a signal you can print
+A digital audio sample is a number giving the signal's value at one instant. Played back at a fixed rate, a stream of samples becomes sound.
 
-A digital audio sample is a number representing an instantaneous signal value. A stream of those values, played at a known sample rate, becomes a changing voltage at an audio output.
+The emulator's first job is to produce that stream from the device's state. You don't need speakers to check it: a list of sample values, or a quick plot, is easier to judge than "this sounds a bit off".
 
-For an emulator, the first task is to generate that stream from device state. The initial diagnostic does not need speakers. A sequence of sample values, or a small plotted waveform, is easier to inspect than an impression that a tone sounds wrong.
+[`apu.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/apu.c) gets one `apu_tick()` call per emulated T-cycle. The front end opens a 48,000 Hz stereo SDL audio device.
 
-[The APU implementation](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/apu.c) receives one call to `apu_tick()` per emulated T-cycle. The front end requests a 48,000 Hz stereo SDL audio device.
+## The four channels
 
-## Understand the four channel families
+| Channel | Generator         | Controls                                                    |
+| ------- | ----------------- | ----------------------------------------------------------- |
+| 1       | Pulse wave        | Duty pattern, period, envelope and frequency sweep          |
+| 2       | Pulse wave        | Duty pattern, period and envelope                           |
+| 3       | Programmable wave | A repeating list of 4-bit samples                           |
+| 4       | Noise             | A shift register producing a repeating pseudo-random signal |
 
-| Channel | Generator         | Main control ideas                                           |
-| ------- | ----------------- | ------------------------------------------------------------ |
-| 1       | Pulse wave        | Duty pattern, period, envelope and frequency sweep           |
-| 2       | Pulse wave        | Duty pattern, period and envelope                            |
-| 3       | Programmable wave | A repeating sequence of four-bit samples                     |
-| 4       | Noise             | A shift register producing a repeating pseudo-random pattern |
+The duty pattern sets how much of each pulse cycle is high. The envelope changes the volume over time. The sweep changes the frequency over time.
 
-A duty pattern determines how much of a pulse wave’s repeating period is high. An envelope changes volume over time. A sweep changes a channel’s period over time.
+Each channel is its own state machine with its own timing, so don't fold them all into a function that runs once per output sample.
 
-These are separate state machines. Avoid putting all their behaviour into a function called once per host audio sample, because the emulated channel events happen at their own rates.
+## Which code actually runs
 
-## Follow the active path, not the first comment
+The top of `apu.c` says channel 3 is a stub, and an older helper returns zero for it. Further down, though, the `apu_tick()` code that actually runs steps through the wave position and reads samples from wave RAM, and register writes configure and trigger the channel.
 
-The beginning of `apu.c` describes channel 3 as stubbed, and an older helper returns zero for its output. Later in the same file, the active `apu_tick()` path advances the wave position and extracts nibbles from wave RAM. Register writes also configure and trigger it.
+So channel 3 isn't missing, but it isn't complete either:
 
-Calling the internal wave-generation path completely absent would therefore be inaccurate. Calling the complete channel operational would also be inaccurate. CPU writes to `0xFF30` through `0xFF3F` reach `apu_io_write()`, but its switch does not store them in wave RAM. The array remains at its reset values through that interface. The active frame sequencer also does not clock channel 3’s length counter, and its byte-sized length field cannot represent 256 directly.
+- CPU writes to `0xFF30`–`0xFF3F` reach `apu_io_write()`, but it doesn't store them in wave RAM, so wave RAM keeps its reset values.
+- The frame sequencer doesn't clock channel 3's length counter.
+- Its length field is a byte, so it can't hold 256.
 
-This is a useful reading habit for unfamiliar systems code. Find the entry point that actually runs, follow its callees, and compare the state transitions with the comments afterwards.
+When reading unfamiliar code, start from the entry point that actually runs, follow what it calls, and only then compare with the comments. The older `mix_and_push_sample()` path isn't called from `apu_tick()`, so describing its helpers as the current design would give the wrong picture of the timing.
 
-The older `mix_and_push_sample()` path is also not the path used by `apu_tick()`. Explaining its helpers as if they were the current scheduler would produce the wrong timing story.
+## Pulse channels
 
-## Generate a pulse from a small table
-
-The pulse channels select one of four eight-step duty tables. A timer controls when the duty position advances.
-
-The source uses a timer reload derived from:
+The pulse channels each pick one of four eight-step duty patterns. A timer decides when to move to the next step:
 
 ```text
 ticks per duty step = (2048 - period_register) × 4
 ```
 
-An eight-step waveform therefore repeats after eight such timer periods.
-
-For a period register of 1024:
+The full eight-step waveform repeats every eight of those. With a period register of 1024:
 
 ```text
 step period = (2048 - 1024) × 4 = 4096 ticks
@@ -65,80 +61,74 @@ wave period = 8 × 4096 = 32,768 ticks
 frequency = 4,194,304 / 32,768 = 128 Hz
 ```
 
-This is a mathematical prediction from the implemented formula, not a measured audio result.
+That's calculated from gmboy's formula, not measured.
 
-At each tick, the current duty-table entry selects either zero or the current envelope volume. That is enough to form a recognisable pulse signal before reproducing the finer analogue characteristics of the hardware.
+On each tick, the current step of the pattern outputs either zero or the envelope volume. That gives a recognisable pulse wave, without the finer analogue details of the hardware.
 
-## Slower controls share a frame sequencer
+## The frame sequencer
 
-The source runs an eight-step frame sequencer, advancing every 8192 emulated ticks. Its nominal step rate is therefore 512 Hz.
+gmboy runs an eight-step frame sequencer that advances every 8192 ticks, which is 512 steps per second.
 
-Length counters advance on steps 0, 2, 4 and 6. Channel 1 sweep advances on steps 2 and 6. Envelopes advance on step 7.
+Length counters update on steps 0, 2, 4 and 6 (256 times a second), channel 1's sweep on steps 2 and 6 (128 times a second), and envelopes on step 7 (64 times a second).
 
-Those schedules produce nominal rates of 256, 128 and 64 events per second respectively.
+On hardware, the sequencer is driven by the timer's divider. [Pan Docs explains this and the analogue output stages](https://gbdev.io/pandocs/Audio_details.html). gmboy uses its own counter instead, so resetting the divider doesn't affect audio the way it does on hardware. The rates are right on average, but the link to the divider is missing.
 
-The real hardware ties this sequencing to divider transitions. [Pan Docs explains that connection and the analogue output stages](https://gbdev.io/pandocs/Audio_details.html). `gmboy` uses its own cycle accumulator, so resetting the timer divider does not produce every hardware APU interaction.
+## The wave channel
 
-This is another case where the average rate can be correct while the timing relationship is incomplete.
+Channel 3 has 16 bytes of wave RAM holding 32 four-bit samples.
 
-## A wave channel packs two samples into each byte
-
-Channel 3 owns 16 bytes of wave RAM, representing 32 four-bit samples.
-
-Teaching extraction:
+Teaching example:
 
 ```c
 u8 packed = wave_ram[position / 2];
 u8 sample = (position & 1) ? (packed & 0x0F) : (packed >> 4);
 ```
 
-The active source uses that idea and applies the configured output-level shift.
+gmboy does this and then applies the output-level shift.
 
-Do not let the `u8 length` field’s apparent range pass unnoticed. Assigning 256 to it produces zero. A model that needs both zero and 256 as distinct states requires a wider field or a carefully defined encoded representation.
+The `u8 length` field is a trap: assigning 256 to it gives zero. If zero and 256 need to mean different things, the field needs to be wider or the encoding defined carefully.
 
-In the current code, the length scheduler also omits channel 3. The right next step is a state test that triggers the channel, advances the length clock, and checks exactly when it becomes disabled.
+Channel 3 is also left out of the length updates. A good next test triggers the channel, advances the length clock and checks exactly when the channel turns off.
 
-## Noise is deterministic state, not host randomness
+## The noise channel
 
-Channel 4 uses a linear-feedback shift register, abbreviated LFSR. The code combines two low bits with XOR, shifts the register and feeds the result back into a higher position. A short-width mode also replaces a lower feedback position.
+Channel 4 uses a linear-feedback shift register (LFSR). gmboy XORs the two lowest bits, shifts the register and feeds the result back in near the top. A short mode feeds it back at a lower position too.
 
-This produces a repeatable sequence from a known initial state. Calling the host’s random-number generator would lose that relationship between device registers, phase and output.
+From a known starting state this always produces the same sequence. Using the host's random number generator would break the connection between the registers and the output.
 
-The noise timer in this snapshot is a `u16`, while some shifted divisor values require more bits. A large shift can therefore wrap during narrowing. Test the period calculation independently before interpreting an unexpected high-frequency signal as an audio-device problem.
+The noise timer is a `u16`, but some divisor values need more bits after shifting, so large shifts can wrap. Test the period calculation on its own before blaming the audio device for an unexpected high-pitched sound.
 
-## Convert ticks to host samples without losing the remainder
+## From ticks to samples
 
-At a sample rate of 48,000 Hz:
+At 48,000 samples per second:
 
 ```text
 emulated ticks per host sample = 4,194,304 / 48,000
                                ≈ 87.381333
 ```
 
-That is not an integer. Always taking 87 ticks would accumulate drift.
+That isn't a whole number, so always using 87 ticks would drift over time.
 
-The active source accumulates instantaneous left and right values on every tick. Once the sample accumulator reaches `cycles_per_sample`, it averages the accumulated values, emits a stereo sample and subtracts the threshold rather than discarding the remainder.
+gmboy adds up the left and right values on every tick. When the counter reaches `cycles_per_sample`, it averages the totals, outputs one stereo sample, and subtracts the threshold rather than resetting to zero, so the fractional remainder carries over.
 
-This is a simple resampling approach. It reduces the information loss of observing one arbitrary tick per sample, but it is not a complete high-quality band-limited resampler or an exact reproduction of the hardware’s analogue filtering.
+This is simple resampling. Averaging is better than taking one tick per sample, but it isn't a high-quality band-limited resampler, and it doesn't reproduce the hardware's analogue filtering.
 
-## Route, scale, queue
+## Mixing and the audio queue
 
-`NR51` selects which channels contribute to the left and right outputs. `NR50` supplies master volume fields. The source sums the selected channel values, scales them and converts the result into signed 16-bit PCM values.
+`NR51` chooses which channels go to the left and right outputs, and `NR50` sets the master volume. gmboy adds up the selected channels, scales them and converts the result to signed 16-bit samples.
 
-The CPU worker places those interleaved left and right samples into a ring buffer. SDL’s callback consumes samples when the host audio device needs them. If the buffer is empty, the callback supplies zeroes.
+The CPU thread puts those left and right samples into a ring buffer, and SDL's callback takes them when the sound card needs more. If the buffer is empty, the callback outputs silence.
 
-The snapshot’s indices are declared `volatile`. That prevents some compiler assumptions about individual accesses, but it does not supply C thread synchronisation. A single-producer, single-consumer queue needs a defined ownership model and appropriate atomic operations or another synchronisation mechanism.
+The buffer indices are `volatile`. That stops the compiler optimising some accesses away, but it doesn't make the queue thread-safe. A queue with one writer and one reader still needs atomic operations or a lock.
 
-The writer also lacks a proper full-buffer check. Do not mistake the comment about overwrite behaviour for a complete overrun policy.
+The writer also doesn't check properly for a full buffer. There's a comment about overwriting, but no real policy for what happens on overrun.
 
-This is a systems boundary: deterministic emulated work meets an independently scheduled host consumer.
+## Exercises
 
-## Checkpoint
+Before listening, test one duty-pattern period, one envelope step, a sweep overflow, two wave RAM samples, a repeatable noise sequence, and the number of samples produced after a fixed number of ticks.
 
-Before judging audio by ear, test one duty-table period, an envelope step, a sweep overflow, two wave-RAM nibbles, a repeatable noise sequence and the number of host samples emitted after a fixed tick count.
-
-Then test queue underflow and overrun separately. A correct waveform and an unreliable queue are different failures, even when both sound like crackling.
+Then test buffer underrun and overrun separately. A wrong waveform and an unreliable queue can both sound like crackling, but they're different bugs.
 
 ## Continue the series
 
-[Previous: Pixels arriving on time](/blog/game-boy-emulator-06-pipeline/). [Next: Making an emulator trustworthy](/blog/game-boy-emulator-08-verification/).
+[Previous: The pixel pipeline, sprites and DMA](/blog/game-boy-emulator-06-pipeline/). [Next: Input, tracing and testing](/blog/game-boy-emulator-08-verification/).

@@ -1,61 +1,59 @@
 ---
-title: 'Game Boy emulator 8: making an emulator trustworthy'
+title: 'Game Boy emulator 8: input, tracing and testing'
 date: '2026-11-20'
-summary: 'Connect SDL and input, build useful traces and turn an experimental emulator into a system you can test and explain.'
+summary: 'Connecting SDL and the joypad, shutting down cleanly, tracing, and a plan for testing the emulator.'
 tags: ['systems engineering', 'Game Boy', 'C']
 draft: false
 ---
 
-Part 8 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers starting to explore computer systems.
+Part 8 of [Building a Game Boy emulator in C](/blog/building-a-game-boy-emulator/). Written for software engineers who are new to computer systems.
 
-This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code labelled as a teaching example explains an idea; it is not a claim that the repository already contains that implementation.
+This chapter follows [`gmboy` at `c1267fd`](https://github.com/avltree9798/gmboy/tree/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab). Code marked as a teaching example illustrates an idea and isn't necessarily in the repository.
 
-The final boundary is the host computer. It supplies windows, keyboard events, audio callbacks and files. None of those services is part of the emulated Game Boy, but all of them affect whether the emulator is pleasant and dependable to use.
+The last part of the emulator is the host computer: windows, keyboard events, audio callbacks and files. None of it is part of the Game Boy, but it decides whether the emulator is pleasant and reliable to use.
 
-This chapter connects that boundary and turns the earlier checkpoints into a verification strategy.
+This chapter covers that layer, then turns the exercises from earlier chapters into a testing plan.
 
-## Present a framebuffer rather than reimplementing the PPU
+## Drawing the frame
 
-[The SDL front end](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ui.c) reads the PPU’s completed pixels and fills scaled rectangles into a host surface. It uploads that surface to a texture and presents it.
+[The SDL front end in `ui.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/ui.c) reads the PPU's finished pixels, draws each one as a scaled rectangle on a surface, uploads the surface to a texture and shows it.
 
-The emulated image remains 160 by 144 pixels. With the source’s scale factor of four, its drawn region is 640 by 576 pixels. The host window constants are 1024 by 768, so those dimensions are not currently the same contract.
+The image is 160 by 144. gmboy scales it by four, to 640 by 576, but the window is 1024 by 768, so the two sizes don't match.
 
-A useful refinement would define the desired presentation explicitly: an exact integer-scaled image, a centred image with borders, or a resizable window with a preserved aspect ratio. That should be a front-end decision, not a change to the PPU’s coordinate system.
+It would be better to choose a presentation explicitly: an exact integer scale, a centred image with borders, or a resizable window that keeps the aspect ratio. That's a front-end decision; the PPU's coordinates shouldn't change.
 
-For performance, uploading a prepared framebuffer can avoid issuing a separate rectangle operation for every source pixel. Measure that change after establishing correct output, rather than guessing that the CPU decoder must be the bottleneck.
+Uploading the whole framebuffer at once would avoid drawing a separate rectangle for every pixel. Get the output right first, then measure, rather than guessing that the CPU decoder is the slow part.
 
-## Frame completion needs ownership
+## Passing frames between threads
 
-The CPU worker updates the framebuffer and frame counter while the main thread reads them.
+The CPU thread writes the framebuffer and a frame counter, and the main thread reads them.
 
-A counter changing is a useful notification, but it does not by itself establish that another thread can safely read the associated buffer. Without synchronisation, the code can have data races even if tearing is difficult to reproduce.
+A changed counter tells the main thread a new frame exists, but it doesn't make reading the buffer safe. Without locking, there's a data race, even if tearing is hard to reproduce.
 
-A teaching double-buffer model is:
+A teaching double-buffer design:
 
 ```text
 worker owns back buffer
 worker finishes a frame
-worker publishes completed-buffer identity
-renderer acquires that identity
-renderer owns the published buffer while presenting it
-worker continues with a different buffer
+worker publishes which buffer is complete
+renderer takes that buffer
+renderer owns it while drawing
+worker carries on with a different buffer
 ```
 
-Implementing that model requires more than two arrays. The hand-off needs a mutex or a correct atomic publication protocol, and the worker must not reuse a buffer while the renderer still owns it.
+This needs more than two arrays. The hand-off needs a mutex or a correct atomic protocol, and the worker mustn't reuse a buffer the renderer still has. Being told a frame is ready isn't the same as owning it; the same problem comes up with queues, caches and async services.
 
-That is the same lifetime question encountered in queues, caches and asynchronous services: notification is not ownership.
+## The joypad
 
-## Input is a register view of host state
+The SDL handler maps `Z` to B, `X` to A, Return to Start, Tab to Select and the arrow keys to the D-pad, and updates the controller state on both key-down and key-up.
 
-The SDL handler maps `Z` to B, `X` to A, Return to Start, Tab to Select and the arrow keys to directions. It updates the controller state on both key-down and key-up events.
+[`joypad.c`](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/joypad.c) exposes that state as active-low bits: a pressed button clears its bit rather than setting it.
 
-[The joypad module](https://github.com/avltree9798/gmboy/blob/c1267fd0a3d73294f4f8f5ee2b16b254b78969ab/src/lib/joypad.c) exposes that state through a selected group of active-low bits. Active-low means that a pressed input clears a bit rather than setting it.
+Software writes selection bits to choose the buttons or the D-pad, then reads the low bits. The key event and the register read don't happen at the same time.
 
-Software writes selection bits to choose button and direction groups, then reads the low bits to discover the selected inputs. The host event and the emulated register read need not happen at the same moment.
+gmboy uses `else if` within each group, so if two buttons in a group are held, only one of them clears its bit.
 
-The current implementation uses `else if` within each group. Consequently, simultaneously pressed buttons in that group do not all clear their corresponding bits.
-
-Teaching correction to the combination step:
+A teaching fix:
 
 ```c
 if (state.start)  output &= ~(1 << 3);
@@ -64,96 +62,88 @@ if (state.b)      output &= ~(1 << 1);
 if (state.a)      output &= ~(1 << 0);
 ```
 
-Those checks belong inside the selected-button-group case. The complete register implementation also needs to preserve the appropriate selection and unused bits, and model the relevant interrupt transitions. The current module does not request joypad interrupts.
+These checks go inside the button-group case. A full implementation also keeps the selection and unused bits correct and raises joypad interrupts, which gmboy doesn't do.
 
-## Shutdown is part of correctness
+## Shutting down
 
-Closing a window sets the coordinator’s `die` flag, destroys the main SDL window and calls `SDL_Quit()`.
+Closing the window sets the `die` flag, destroys the SDL window and calls `SDL_Quit()`.
 
-The worker loop, however, watches a different `running` flag. The current coordinator does not join that worker before returning, and the shown close path does not explicitly close the audio device or free all device resources.
+The worker thread, though, checks a different flag, `running`. The coordinator doesn't wait for the worker to finish before returning, and the close path doesn't close the audio device or free everything.
 
-A more deliberate shutdown sequence would:
+A safer shutdown would:
 
-1. Publish a stop request through a synchronised mechanism.
-2. Allow the worker to stop accessing shared state.
+1. Signal the worker to stop, using proper synchronisation.
+2. Let the worker stop touching shared state.
 3. Join the worker thread.
 4. Stop and close the audio device.
-5. Persist any required cartridge data.
-6. Release textures, surfaces, windows and emulator allocations.
+5. Save any cartridge data that needs saving.
+6. Free textures, surfaces, windows and emulator memory.
 7. Shut SDL down.
 
-The exact ordering follows resource ownership. The important property is that a resource is not destroyed while another thread can still access it.
+The order follows who owns what. The rule is that nothing is destroyed while another thread can still use it.
 
-## Make the trace describe the machine
+## CPU traces
 
-A CPU trace should contain the program counter, opcode bytes, decoded operation, relevant registers, flags and emulated tick count.
+A useful CPU trace line has the program counter, the opcode bytes, the decoded instruction, the relevant registers and flags, and the tick count.
 
-The source has such trace code, but it is guarded by the compile-time `CPU_DEBUG` macro, defined as zero in `cpu.c`. Setting an environment variable called `DEBUG` does not change that macro in this snapshot, even though the project notes suggest environment-variable commands.
+gmboy has trace code, but it's behind the `CPU_DEBUG` macro, which `cpu.c` defines as zero. Setting a `DEBUG` environment variable, as the project notes suggest, does nothing in this snapshot.
 
-To investigate this code, enable the compile-time path in a local debugging change and rebuild. A future implementation could introduce an explicit run-time option, but that is not already present.
+To get traces, change the macro locally and rebuild. A command-line option would be a nice addition, but it doesn't exist yet. It's worth checking that a debug setting is actually read before trusting that it's on.
 
-This distinction prevents a surprisingly common debugging failure: assuming that a command activated instrumentation when no output path reads the setting.
+## The debug views
 
-## Use the debug view as evidence, not decoration
+The SDL debug window decodes tiles separately from the real pixel pipeline, which helps tell bad tile data apart from bad map selection.
 
-The SDL debug window decodes tile data independently of the final pixel pipeline. That can help separate bad source graphics from bad map selection.
+But it combines the two bit planes the opposite way round from the pipeline, so the viewer and the screen can disagree because of a bug in the viewer. Test it with the same known row from part 5; debug tools are code too.
 
-However, the current tile viewer combines the two bit planes with the opposite significance from the active pipeline. The viewer can therefore disagree with the display for a reason inside the debugging tool.
+The serial debug helper grabs a byte when the serial control register is `0x81` and appends it to a fixed-size buffer. It only runs inside the compile-time debug block, not as a real serial device.
 
-Test diagnostic helpers with the same known row used in part 5. A tool that visualises state is still code, and its interpretation needs verification.
+That's enough for some test ROMs that print over serial, but it isn't a full serial implementation, and the buffer needs a bounds check before you feed it arbitrary output.
 
-The serial debug helper also deserves attention. It captures a byte when the serial control register equals `0x81`, then appends it to a fixed-size message buffer. It is invoked from the compile-time debug block, not from an always-on serial device model.
+## A testing plan
 
-That is useful for some diagnostic ROM conventions, but it is not a complete serial transfer implementation. Bounds checks are also required before treating an arbitrary diagnostic program as an unlimited source of trace text.
+The repository has no automated tests and no compatibility report. This is a suggested order, not results.
 
-## Build a test ladder
+| Layer            | Example tests                             | What it checks                 |
+| ---------------- | ----------------------------------------- | ------------------------------ |
+| Data formats     | Register pairs, tile rows, palette fields | Bit and byte handling          |
+| Device behaviour | Timer edges, bank writes, DMA steps       | Each component's state machine |
+| Single CPU steps | Opcode, operands, flags, cycles           | Instruction behaviour          |
+| Combined traces  | Interrupt entry during timed code         | Order between components       |
+| Test ROMs        | CPU, timer, graphics and audio tests      | Behaviour a program can see    |
+| Host integration | Buffer ownership, input, shutdown         | Threads and host resources     |
 
-The repository snapshot has no checked-in automated test suite or demonstrated compatibility report. The following is a proposed ladder, not a list of results already achieved.
+Start with tests that don't need SDL. Then add a headless runner that loads a test ROM, runs for a fixed number of ticks and reports the result.
 
-| Layer               | Example checks                            | What it isolates               |
-| ------------------- | ----------------------------------------- | ------------------------------ |
-| Pure representation | Register pairs, tile rows, palette fields | Bit and byte interpretation    |
-| Device transitions  | Timer edges, bank writes, DMA steps       | A component’s state machine    |
-| CPU single-step     | Opcode, operands, flags, cycles           | Instruction semantics          |
-| Integrated traces   | Interrupt entry during timed execution    | Component ordering             |
-| Diagnostic ROMs     | CPU, timer, graphics and audio tests      | Observable machine behaviour   |
-| Host integration    | Buffer ownership, input, shutdown         | Threads and external resources |
+Give the runner a timeout, so a test that never reports completion fails with a trace instead of running forever.
 
-Start with deterministic checks that do not need SDL. Then add a headless runner that can load a diagnostic program, advance a bounded number of ticks and report a result.
+## Finding the first difference
 
-A timeout belongs in that runner. A program that never signals completion should fail with a useful trace rather than run forever.
+When a test fails, look for the first point where the state differs from what's expected. A corrupt final frame can be thousands of instructions after a wrong half-carry flag.
 
-## Compare the first divergence
+Good things to compare:
 
-When a diagnostic fails, find the earliest state that differs from the expectation. A final corrupted frame may be thousands of instructions downstream from a bad half-carry flag.
-
-Useful comparisons include:
-
-- The first differing instruction trace.
+- The first instruction trace line that differs.
 - The first timer increment at the wrong tick.
-- The first scanline whose mode transitions differ.
-- The first audio sample count that departs from the expected rate.
+- The first line whose mode changes differ.
+- The first point where the audio sample count drifts.
 
-Keep the initial state, source revision and test binary identity with the result. Reproduction depends on all three.
+Record the starting state, the source revision and the exact test ROM with each result, or you won't be able to reproduce it.
 
-[Mooneye’s test suite](https://github.com/Gekkio/mooneye-test-suite) is one possible source of focused hardware tests. Read each test’s requirements and result convention rather than assuming that a visible screen means success. A second emulator is a useful comparison tool, but it is not automatically an authority on every hardware quirk.
+[Mooneye's test suite](https://github.com/Gekkio/mooneye-test-suite) has focused hardware tests. Read how each one reports pass or fail rather than assuming a picture on screen means it passed. Comparing with another emulator helps, but other emulators get some quirks wrong too.
 
-## A practical next iteration
+## What I'd do next
 
-For this snapshot, I would first establish instruction and device tests around the timer overflow condition, SBC carry boundary, palette extraction and combined joypad inputs. Each is small enough to reason about without a commercial game.
+First, I'd add tests around the bugs found in this series: the timer overflow check, the SBC carry case, palette extraction and holding two buttons at once. Each is small enough to check without a game.
 
-Then I would work on explicit register representation, mapper bounds and banking rules, interrupt timing, memory-access distinctions, and synchronised frame and audio hand-offs.
+Then I'd work on register pairs without host assumptions, cartridge bounds and banking, interrupt timing, different memory access for different devices, and safe frame and audio hand-offs between threads.
 
-Only after those foundations would I trust broad performance or compatibility claims.
+Only after that would I make claims about performance or compatibility.
 
-## What this project teaches beyond emulation
+## Summary
 
-An emulator makes systems ideas tangible. A memory bus is an interface with side effects. An instruction decoder is an interpreter. A pixel FIFO is a bounded pipeline. An audio queue is a producer-consumer boundary. A frame hand-off is an ownership protocol. A diagnostic trace is observability tied to a deterministic clock.
-
-You can learn each of those ideas in a much larger system. Here, the machine is small enough to follow an event from a byte in a cartridge to a pixel or sample on the host.
-
-That is the real milestone of the series: being able to explain the complete path, identify the assumptions at every boundary, and design a test that would expose a wrong one.
+Most of the ideas in this series show up in larger systems too: the bus is an interface with side effects, the decoder is an interpreter, the pixel FIFO is a bounded pipeline, the audio queue is a producer and consumer, and the frame hand-off is a question of ownership. The Game Boy is small enough that you can follow a byte in the cartridge all the way to a pixel or a sample on your computer.
 
 ## Continue the series
 
-[Previous: Making the machine audible](/blog/game-boy-emulator-07-audio/). Return to the [series guide](/blog/building-a-game-boy-emulator/).
+[Previous: Audio](/blog/game-boy-emulator-07-audio/). Back to the [series guide](/blog/building-a-game-boy-emulator/).
