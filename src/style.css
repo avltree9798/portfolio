@@ -953,6 +953,12 @@ dialog::backdrop {
 .dialog-body > .button {
   margin-top: 24px;
 }
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
 @media (min-width: 1600px) {
   .shell {
     max-width: 1360px;

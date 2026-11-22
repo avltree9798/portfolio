@@ -11,6 +11,7 @@ const categories: Category[] = [
   'All work',
   'Security engineering',
   'Open source',
+  'Side projects',
 ]
 const projects = computed(() =>
   portfolio.projects.filter(
@@ -273,14 +274,33 @@ function closeProject() {
       <div class="tags">
         <span v-for="tag in selected.tags" :key="tag">{{ tag }}</span>
       </div>
-      <a
-        v-if="selected.url"
-        class="button primary"
-        :href="selected.url"
-        target="_blank"
-        rel="noopener noreferrer"
-        >View source</a
+      <div
+        v-if="selected.url || selected.liveUrl || selected.article"
+        class="project-links"
       >
+        <a
+          v-if="selected.liveUrl"
+          class="button primary"
+          :href="selected.liveUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Open {{ selected.title }}</a
+        >
+        <a
+          v-if="selected.url"
+          class="button primary"
+          :href="selected.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          >View source</a
+        >
+        <a
+          v-if="selected.article"
+          class="button secondary"
+          :href="`/blog/${selected.article}/`"
+          >Read the write-up</a
+        >
+      </div>
     </div>
   </dialog>
 </template>

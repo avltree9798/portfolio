@@ -1,6 +1,7 @@
 import cv from './cv.json'
 
-export type Category = 'All work' | 'Security engineering' | 'Open source'
+export type Category =
+  'All work' | 'Security engineering' | 'Open source' | 'Side projects'
 export interface Project {
   id: string
   title: string
@@ -14,7 +15,12 @@ export interface Project {
   outcomeTitle: string
   outcome: string
   context: string
+  /** Public source repository. */
   url?: string
+  /** Live, publicly reachable deployment. */
+  liveUrl?: string
+  /** Slug of a published post in content/posts describing the project. */
+  article?: string
 }
 
 // Content is the CMS. Edit this file in a pull request; merge to master to publish.
@@ -50,6 +56,22 @@ export const portfolio = {
       outcomeTitle: 'Impact',
       outcome:
         'Logging processing time reduced from 2 hours to under 5 minutes.',
+    },
+    {
+      id: 'airtrace',
+      title: 'Airtrace',
+      subtitle: 'A live flight radar that says “probably” when it should.',
+      category: 'Side projects',
+      tags: ['TypeScript', 'Vue', 'Cloudflare Workers'],
+      artwork: 'radar',
+      context: 'Personal project · Live flight radar',
+      detail:
+        'A flight radar built with Vue, Leaflet and a Cloudflare Worker. One shared Durable Object caches community ADS-B feeds, serialises upstream requests and fails over between three providers, so every visitor shares a free API plan. Includes plane-spotting tools, an airport explorer, replay and an installable offline shell.',
+      outcomeTitle: 'Engineering highlights',
+      outcome:
+        'Markers ease between measured positions and never extrapolate. Route evidence is graded rather than presented as a destination, parallel runways are told apart by cross-track distance, and a missing value stays unknown instead of becoming zero. 137 automated tests and browser checks against the live site.',
+      liveUrl: 'https://adsb.avltree9798.co.uk',
+      article: 'building-airtrace',
     },
     {
       id: 'pyloquent',

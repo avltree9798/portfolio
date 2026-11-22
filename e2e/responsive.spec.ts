@@ -38,7 +38,7 @@ for (const layout of layouts) {
       )
     }
     const cards = page.locator('[data-project]')
-    await expect(cards).toHaveCount(7)
+    await expect(cards).toHaveCount(8)
     if (layout.width <= 580) {
       await page.getByRole('button', { name: 'Menu', exact: true }).click()
       await expect(page.getByRole('navigation')).toBeVisible()
