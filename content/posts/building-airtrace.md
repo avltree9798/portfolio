@@ -63,7 +63,7 @@ _The aircraft database knew this 747’s model and tracking history but not its 
 
 ## A radar scope in twenty lines
 
-"What's overhead?" takes one location reading and does everything else in the browser. For each aircraft it computes the great-circle distance and the initial bearing from the observer. It then compares the aircraft's ground track with the bearing from the aircraft back to the observer. Within 60° it is approaching, beyond 120° it is moving away, and in between it is passing.
+The Nearby view in Spotter tools takes one location reading and does everything else in the browser. For each aircraft it computes the great-circle distance and the initial bearing from the observer. It then compares the aircraft's ground track with the bearing from the aircraft back to the observer. Within 60° it is approaching, beyond 120° it is moving away, and in between it is passing.
 
 Drawing the scope is the same bearing turned into SVG coordinates. Distance becomes a fraction of the radius; screen `y` grows downwards, so north is negative:
 
