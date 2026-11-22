@@ -60,7 +60,7 @@ export const portfolio = {
     {
       id: 'airtrace',
       title: 'Airtrace',
-      subtitle: 'A live flight radar that says “probably” when it should.',
+      subtitle: 'A live flight tracker running on Cloudflare Workers.',
       category: 'Side projects',
       tags: ['TypeScript', 'Vue', 'Cloudflare Workers'],
       artwork: 'radar',

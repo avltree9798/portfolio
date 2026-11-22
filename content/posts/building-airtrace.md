@@ -8,7 +8,7 @@ draft: false
 
 [Airtrace](https://adsb.avltree9798.co.uk) is a live flight radar I built for myself: a map of aircraft, the detail of each flight, the airports they use and a few tools for plane spotting. It is a Vue 3 and TypeScript single-page app with Leaflet for the map, served by a Cloudflare Worker that fronts community ADS-B feeds.
 
-![Airtrace's live map over New Jersey, with American Airlines flight AAL1452 selected and its telemetry in the side panel](/images/airtrace/map.webp)
+![Airtrace's live map over New Jersey, with the Boeing 747 freighter AAE8866 selected and its telemetry in the side panel](/images/airtrace/map.webp)
 
 _The live map with two-second updates. Map data © OpenStreetMap contributors; aircraft data from FlyItalyADSB (CC BY-SA 4.0)._
 
@@ -53,13 +53,13 @@ Following a flight exposed a quieter bug. Panning the Leaflet map can fire `move
 
 ADS-B identifies the **airframe**, a 24-bit address that stays with the aircraft, and broadcasts a **callsign**, which an airline reuses every day and sometimes for different legs. Neither one tells you where the aircraft is going today.
 
-FlyItalyADSB attaches a usual route to a callsign with its evidence: `count`, how often the callsign flew that pair in the last seven days, and `last_day`. Airtrace grades that evidence. Five or more flights with the latest within two days is strong, three or more within a week is moderate, and anything else is weak. Only strong or moderate evidence fills in the journey estimate automatically; weak evidence becomes a button. Every grade ends with "not a confirmed flight plan for today".
+FlyItalyADSB attaches a usual route to a callsign with its evidence: `count`, how often the callsign flew that pair in the last seven days, and `last_day`. Airtrace grades that evidence. Five or more flights with the latest within two days is strong, three or more within a week is moderate, and anything else is weak. Only strong or moderate evidence fills in the journey estimate automatically; weak evidence becomes a button. Every grade ends with “Today’s flight may be different.”
 
-Legs come from the recorded track. A new leg starts only where the provider marks one, or where consecutive samples less than two minutes apart show the aircraft leaving the ground. A forty-minute gap over the sea is a gap in coverage, not a new flight. The same idea runs through coverage: when an aircraft stops reporting, the card says a landing is possible only if the last position was low and near an airport. Otherwise it reads "most likely a gap in receiver coverage".
+Legs come from the recorded track. A new leg starts only where the provider marks one, or where consecutive samples less than two minutes apart show the aircraft leaving the ground. A forty-minute gap over the sea is a gap in coverage, not a new flight. The same idea runs through coverage: when an aircraft stops reporting, the card says a landing is possible only if the last position was low and near an airport. Otherwise it reads “Probably out of receiver range, not landed.”
 
-![The aircraft card showing the airframe's model and build year, followed by separate airframe, callsign and flight-leg entries](/images/airtrace/card.webp)
+![The aircraft card for a Boeing 747-400 with its build year and operator shown as unknown, followed by separate airframe, callsign and flight-leg entries](/images/airtrace/card.webp)
 
-_Profile and identity for one airframe. The provider supplies the model and build year; it publishes no operator, so the operator is labelled as inferred from the callsign._
+_The aircraft database knew this 747’s model and tracking history but not its build year, and its callsign prefix matches no airline Airtrace knows. Both say “Unknown” instead of a guess._
 
 ## A radar scope in twenty lines
 
@@ -92,17 +92,17 @@ const offsetNm =
 
 After that change JFK showed arrivals on 13L and departures on 13R, which is how it usually runs that configuration. The panel still says this is inference from received tracks, not ATIS.
 
-![The airport explorer for JFK, with runways drawn on the map, nearby aircraft, and inferred arrivals on runways 22L and 22R in the side panel](/images/airtrace/airport.webp)
+![The airport explorer for JFK, with runways drawn on the map, nearby aircraft, and estimated runway use in the side panel](/images/airtrace/airport.webp)
 
-_JFK's runways drawn from OurAirports threshold coordinates (public domain), with live traffic and inferred runway activity._
+_JFK's runways drawn from OurAirports threshold coordinates (public domain), with live traffic and an estimate of the runways in use._
 
 ## Replay that follows the data
 
 The replay steps through recorded positions rather than a model. Trails can be coloured by altitude or speed, and altitude and speed charts share the replay's time axis: the cursor follows playback, and selecting a point on either chart seeks to it. Charts and trails break at gaps of more than five minutes rather than drawing a confident straight line through the missing part.
 
-![Replay paused part-way through a climb out of Philadelphia, with the map in replay mode and altitude and ground-speed charts showing a shared cursor](/images/airtrace/replay.webp)
+![Replay paused part-way along a 747 freighter’s track over Maine, with the trail coloured by speed and altitude and ground-speed charts sharing a cursor](/images/airtrace/replay.webp)
 
-_Replay of a departure from Philadelphia. The white line on both charts marks the replay position._
+_Replay of AAE8866 with the trail coloured by ground speed. The white line on both charts marks the replay position._
 
 A user report caught the most visible bug in this feature: a replayed aircraft pointing north while it flew south-west. When the feed omitted a track, the normaliser had stored `0`, which is a perfectly valid heading. Missing values are now `null`. Replay uses the recorded track, otherwise the bearing between consecutive recorded points (never across a gap), otherwise the last known track.
 
