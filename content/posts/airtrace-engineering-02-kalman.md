@@ -60,7 +60,7 @@ const h10 = t ** 3 - 2 * t ** 2 + t,
 const p = h10 * m0 + h01 * p1 + h11 * m1
 ```
 
-`m0` and `m1` are the velocities multiplied by the time between the states, and the curve's derivative gives the direction the marker should point at each moment. `t` is clamped between 0 and 1. The curve never extends past the latest report, so the promise from the first article still holds: the map never shows a position that wasn't measured.
+`m0` and `m1` are the tangents: they point along each state's velocity, and their length sets how far the curve bulges. The curve's derivative gives the direction the marker should point at each moment. How long to make the tangents turned out to matter a great deal; see below. `t` is clamped between 0 and 1. The curve never extends past the latest report, so the promise from the first article still holds: the map never shows a position that wasn't measured.
 
 ## Testing it
 
@@ -70,11 +70,30 @@ The curve needed real data. I took the saved tracks of real flights, found every
 
 ![A real turn by DAL37 of 104 degrees between two reports 48 seconds apart. Twenty-one hidden reports trace an arc; the Hermite curve follows them closely, while the straight dashed line cuts across the inside of the turn](/images/airtrace/engineering/hermite-turn.svg)
 
-That turn is the clearest example: DAL37 turning 104° in 48 seconds, with 21 reports in between. The curve misses them by 52 m on average; the straight line by 717 m. Across all 3,223 checkpoints in the recorded flights, the median miss was **34 m for the curve and 144 m for the straight line**.
+That turn is the clearest example: DAL37 turning 104° in 48 seconds, with 21 reports in between. The curve misses them by 102 m on average; the straight line by 717 m. Across all 3,223 checkpoints in the recorded flights, the median miss was **35 m for the curve and 144 m for the straight line**.
+
+## The wobble
+
+The first version sized the tangents the textbook way: each state's velocity multiplied by the time between the two states. It passed every test, including the backtest on real turns. Then I watched it on my phone and every aircraft on the map was wagging its nose back and forth.
+
+The tests had used the recorded tracks' timestamps, which are exact. The live map didn't have those. It worked out each report's time as the browser's clock minus the report's age, and the browser's clock includes however long the data took to arrive: network latency, plus up to several seconds of queueing when requests compete for the shared API slot. Two reports really two seconds apart could be timestamped six seconds apart. The tangents came out three times too long, the curve overshot the new position and swung back, and the marker, pointing along the curve, swung its nose with it.
+
+I measured it with a headless browser sampling every marker's rotation five times a second for 20 seconds on the live map: 14 of 24 markers swung back and forth, one by 2,876° in total.
+
+Two changes fixed it. Reports are now timed by the data source's own clock, which stamps each snapshot. And, more fundamentally, the curve's shape no longer depends on time at all. The tangents are sized by the straight-line distance between the two positions (the chord), so the curve can't overshoot either end whatever the timestamps say. Plain chord length flattens sharp turns, though: DAL37's turn got worse, from 52 m to 153 m. For a circular arc turning through an angle θ, the cubic that matches it best has tangents of chord × 2·tan(θ/4) / sin(θ/2), which is 1 for a straight line and about 1.24 for a 104° turn. That uses only the angle between the two headings, so it's still independent of timing, and it brings the turn back to 102 m.
+
+```ts
+const arc = theta < 1e-3 ? 1 : (2 * Math.tan(theta / 4)) / Math.sin(theta / 2)
+const chord = Math.hypot(p1[0], p1[1]) * arc
+```
+
+After the fix, the same measurement found no markers swinging back and forth; the few that changed heading were turning steadily one way. A test now feeds the curve two reports with deliberately wrong timestamps and checks it never moves backwards or swings its heading.
+
+The lesson I'd take from it: a backtest is only as good as the inputs it shares with production. Mine used clean timestamps the live app never sees.
 
 ## Two honest caveats
 
-The first backtest I ran found almost no improvement. Turns in the recorded tracks are densely reported, a position every six seconds or so, and over six seconds a turn hardly curves. Both methods missed by about 34 m, which is just rounding and receiver noise. The curve earns its keep when updates are sparse: backup feeds that refresh every three minutes, aircraft at the edge of coverage, or a phone that has been in your pocket. On the main two-second feed you mostly won't see the difference.
+The first backtest I ran found almost no improvement. Turns in the recorded tracks are densely reported, a position every six seconds or so, and over six seconds a turn hardly curves. Both methods missed by about the same amount, which is just rounding and receiver noise. The curve earns its keep when updates are sparse: backup feeds that refresh every three minutes, aircraft at the edge of coverage, or a phone that has been in your pocket. On the main two-second feed you mostly won't see the difference.
 
 And I wrote two tests wrongly before the filter was right. One used a turn radius three times too large, so the positions said 750 knots while the velocities said 250. The other fed in "agreeing" reports that moved 70 metres every two seconds while claiming 450 knots. Both failed for good reasons. When a test of a physical model fails, check the test's physics first.
 
