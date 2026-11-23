@@ -79,9 +79,18 @@ The same night, I accidentally stopped following JAL44 and couldn't get it back:
 
 1. Ask the provider for that callsign live. If someone hears it, go straight to it.
 2. If not, find which aircraft flew that callsign in the last week (the provider keeps a table of observed flights), and check each one's recorded track for today, newest first, at most four.
-3. A track only minutes old means the aircraft is being heard right now but its live reports don't carry the callsign, which happens more than you'd think. Look it up by its 24-bit address instead and return the live aircraft.
+3. A track only minutes old means the aircraft is being heard right now after all. Look it up by its 24-bit address instead and return the live aircraft.
 
 For JAL44 it found the aircraft (an Airbus A350-1000 registered JA11WJ), its destination, and a report from a minute earlier, and placed it with a ±4 nm circle.
+
+### A third step that was hiding two bugs
+
+I added that third step because the first one kept missing flights that were plainly being heard, and I explained it to myself as "some live reports don't carry the callsign". That explanation was wrong, and I wrote it into this article before I'd checked. A day later, trying to follow a callsign before its flight existed, I found the live callsign lookup had never worked at all, for two separate reasons:
+
+- The provider answers a callsign lookup with the aircraft itself, not the list of aircraft every other lookup returns. My code checked for the list, called the answer invalid, and gave up. I found this only after making the failure visible: the error now says which endpoint it called and what the response's keys were, which was all it took.
+- Elsewhere in the Worker, aircraft the feed had already cleaned up were run through the same parser a second time. The parser looks for the raw feed's field names, so the second pass quietly erased each aircraft's callsign, altitude and speed. Several notifications had been broken by it since the first alerts shipped, and every test passed, because the tests fed those code paths raw data rather than what the feed really returns.
+
+The address lookup in step 3 is still a sensible fallback. But the lesson is the one the other articles keep arriving at from different directions: when a fallback exists to explain a surprising failure, find the failure first. A plausible story is not evidence, and a test is only as honest as the data it's fed.
 
 ## What it can't do
 
