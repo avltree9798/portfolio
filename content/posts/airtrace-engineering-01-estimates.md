@@ -73,6 +73,14 @@ The medians are about the same; what changes is the bad cases. Plain dead reckon
 
 The uncertainty circle got the same treatment. My first formula was too confident: only 61% of the real positions fell inside it. After the steering change the error shrank, and 85% now fall inside. The backtest is part of the test suite, so if a later change makes either number worse, the build fails.
 
+## Update: real gaps are harder
+
+Everything above hides part of a track that was fully covered, which is the easy case. A real gap happens where coverage is poor, often on a detour, so I later measured the estimate on 19 gaps that really happened, from 9 flights.
+
+The result was less flattering. The median error was 20 nm against 18 nm for plain dead reckoning, so the estimate isn't better in the middle of the distribution. It does still help in the bad cases (80th percentile 37 nm against 76 nm). Only 74% of real positions fell inside the circle, not 85%. The worst miss was a flight that turned about 96° during a 109-minute gap and ended up 219 nm from where I put it.
+
+I made the circle twice as large, which puts 84% of those 19 inside. That's a small sample, so treat it as a rough calibration, not a guarantee. The measurement is now a test in the repository.
+
 ## Finding a flight again
 
 The same night, I accidentally stopped following JAL44 and couldn't get it back: search only covered the area loaded around the map, and JAL44 was far outside it. So a search for a callsign that has no match nearby now offers to look everywhere:
