@@ -78,7 +78,7 @@ The first version sized the tangents the textbook way: each state's velocity mul
 
 The tests had used the recorded tracks' timestamps, which are exact. The live map didn't have those. It worked out each report's time as the browser's clock minus the report's age, and the browser's clock includes however long the data took to arrive: network latency, plus up to several seconds of queueing when requests compete for the shared API slot. Two reports really two seconds apart could be timestamped six seconds apart. The tangents came out three times too long, the curve overshot the new position and swung back, and the marker, pointing along the curve, swung its nose with it.
 
-I measured it with a headless browser sampling every marker's rotation five times a second for 20 seconds on the live map: 14 of 24 markers swung back and forth, one by 2,876° in total.
+A unit test reproduces it exactly: give the curve two reports whose timestamps are wrong and its heading swings by 90° in the middle of a perfectly straight line. Seeing it on the live map was harder, and my first attempt was wrong. It matched markers by their position in the page, which reshuffles whenever the map pans, so it spliced different aircraft into one series and reported most markers swinging by thousands of degrees. I've thrown those numbers away. Redone properly, matching each marker by its own element, on the old build with a slow network and a slow CPU: two of ten markers reversed their heading repeatedly in one run, and none did in three more runs. Markers never stepped backwards along their path. So the defect is real and the fix is tested, but I can't say how often it showed in practice, and my own recording of it on a phone was the best evidence I had.
 
 Two changes fixed it. Reports are now timed by the data source's own clock, which stamps each snapshot. And, more fundamentally, the curve's shape no longer depends on time at all. The tangents are sized by the straight-line distance between the two positions (the chord), so the curve can't overshoot either end whatever the timestamps say. Plain chord length flattens sharp turns, though: DAL37's turn got worse, from 52 m to 153 m. For a circular arc turning through an angle θ, the cubic that matches it best has tangents of chord × 2·tan(θ/4) / sin(θ/2), which is 1 for a straight line and about 1.24 for a 104° turn. That uses only the angle between the two headings, so it's still independent of timing, and it brings the turn back to 102 m.
 
@@ -87,9 +87,9 @@ const arc = theta < 1e-3 ? 1 : (2 * Math.tan(theta / 4)) / Math.sin(theta / 2)
 const chord = Math.hypot(p1[0], p1[1]) * arc
 ```
 
-After the fix, the same measurement found no markers swinging back and forth; the few that changed heading were turning steadily one way. A test now feeds the curve two reports with deliberately wrong timestamps and checks it never moves backwards or swings its heading.
+After the fix, four runs of the corrected measurement found none. A test now feeds the curve two reports with deliberately wrong timestamps and checks it never moves backwards or swings its heading.
 
-The lesson I'd take from it: a backtest is only as good as the inputs it shares with production. Mine used clean timestamps the live app never sees.
+The lesson I'd take from it: a backtest is only as good as the inputs it shares with production, and mine used clean timestamps the live app never sees. A measurement is only as good as its bookkeeping, too: my first live count was wrong, and I only caught it because the numbers were too dramatic to be believed.
 
 ## Two honest caveats
 
