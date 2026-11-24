@@ -81,6 +81,10 @@ The result was less flattering. The median error was 20 nm against 18 nm for pla
 
 I made the circle twice as large, which puts 84% of those 19 inside. That's a small sample, so treat it as a rough calibration, not a guarantee. The measurement is now a test in the repository.
 
+A day later I scored the estimator on a much bigger set: 94 real gaps from 38 long-haul flights that landed the day before, 37 of them 90 minutes or longer. This time the circle held 83% of the time, close to the 84% I'd fitted on different flights. The estimate also beat plain dead reckoning on the long gaps (median 122 against 172 nm for 90 to 240 minutes, and 226 against 470 nm beyond four hours), though not on the short ones, where the two are equal.
+
+Then I tried using other flights. Following the path of an earlier flight on the same route made things worse when I tested it by hiding stretches of flights that were fully covered. On real gaps it was the opposite: for the 45 gaps where an earlier flight on the same route had been recorded before the gap began, the median error halved (14 to 7 nm) and the 80th percentile fell from 117 to 37 nm. I think that's because real gaps happen where routes are least predictable, and the hidden stretches I'd been testing on were not. That version is now in the app, and a forecast wind adjustment, which made no measurable difference, is not.
+
 ## Finding a flight again
 
 The same night, I accidentally stopped following JAL44 and couldn't get it back: search only covered the area loaded around the map, and JAL44 was far outside it. So a search for a callsign that has no match nearby now offers to look everywhere:
