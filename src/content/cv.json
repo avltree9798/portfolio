@@ -144,5 +144,9 @@
       "Thesis: Web Application Firewall Business",
       "Co-founded cybersecurity CTF team that placed top 2 in national competition"
     ]
-  }
+  },
+  "profile": [
+    "Hands-on security engineer with experience leading enterprise security initiatives at Cloudflare, Yelp and Gopay. Combines detection and response engineering, endpoint security and security automation with deep expertise in macOS and iOS.",
+    "Delivered security tooling managing over 10,000 devices, led an EDR migration across more than 6,000 endpoints, and built logging pipelines that reduced processing time from two hours to under five minutes. Experience includes automated malware analysis, phishing detection and building tools that help security teams investigate and respond to threats."
+  ]
 }

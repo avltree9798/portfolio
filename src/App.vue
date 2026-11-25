@@ -75,10 +75,10 @@ function closeProject() {
         </p>
         <h1 id="hero-title">Security engineer<br />in <span>London</span>.</h1>
         <p class="hero-description">
-          I’ve worked on Apple platform security, detection engineering and<br
+          I work on enterprise security, detection and response engineering,<br
             class="desktop-break"
           />
-          security automation. Outside work I build emulators and a flight
+          and security automation. Outside work I build emulators and a flight
           tracker.
         </p>
         <div class="hero-actions">
@@ -105,8 +105,8 @@ function closeProject() {
       <div class="shell">
         <span>Apple platform security</span><b aria-hidden="true">✦</b
         ><span>Security automation</span><b aria-hidden="true">✦</b
-        ><span>Cloud infrastructure</span><b aria-hidden="true">✦</b
-        ><span>Detection engineering</span>
+        ><span>Enterprise security</span><b aria-hidden="true">✦</b
+        ><span>Detection &amp; response engineering</span>
       </div>
     </div>
     <section id="work" class="section shell" aria-labelledby="work-title">
@@ -184,8 +184,10 @@ function closeProject() {
         <p class="eyebrow">ABOUT</p>
         <h2 id="about-title">About me<span>.</span></h2>
         <p>
-          I’m a security engineer in London. Most of my work has been on Apple
-          platform security, offensive research and automating security work.
+          I’m a security engineer in London, focused on enterprise security,
+          detection and response engineering. I’ve led security initiatives at
+          Cloudflare, Yelp and Gopay, combining endpoint security and automation
+          with deep expertise in macOS and iOS.
         </p>
         <p>
           Outside work I’m into aviation, Japan and Nintendo games. My favourite

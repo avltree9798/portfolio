@@ -57,3 +57,16 @@ test('generates a real three-page PDF and rejects overflowing pages', async () =
   }
   await assert.rejects(() => generateCv(oversized), /overflows/)
 })
+
+test('places the professional profile before career details and escapes its text', () => {
+  const html = renderCvHtml({
+    ...cv,
+    profile: ['Enterprise security <lead>', 'Detection & response engineering'],
+  })
+  assert.ok(html.includes('Enterprise security &lt;lead&gt;'))
+  assert.ok(html.includes('Detection &amp; response engineering'))
+  assert.ok(
+    html.indexOf('Enterprise security &lt;lead&gt;') <
+      html.indexOf('Certifications'),
+  )
+})
