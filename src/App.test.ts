@@ -5,7 +5,7 @@ import App from './App.vue'
 import { portfolio } from './content/portfolio'
 
 describe('portfolio visitor journeys', () => {
-  it('introduces Anthony and offers a real contact and downloadable CV', () => {
+  it('introduces Anthony and offers contact without a public CV download', () => {
     const page = mount(App)
     expect(page.text()).toContain(portfolio.name)
     expect(page.text()).not.toMatch(/\bPRIVATE_PROJECT_MARKER\b/i)
@@ -15,9 +15,7 @@ describe('portfolio visitor journeys', () => {
     expect(page.find('a[href="mailto:me@avltree9798.co.uk"]').exists()).toBe(
       true,
     )
-    expect(page.find('a[download]').attributes('href')).toBe(
-      '/Anthony_Viriya_CV.pdf',
-    )
+    expect(page.find('a[download]').exists()).toBe(false)
   })
   it('filters work by category and restores the complete collection', async () => {
     const page = mount(App)

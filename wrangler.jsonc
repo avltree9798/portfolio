@@ -2,12 +2,26 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "anthony-viriya-portfolio",
   "account_id": "1f5a65722773922bb659b5c86204c222",
+  "main": "worker/index.mjs",
+  "rules": [{ "type": "Data", "globs": ["**/*.pdf"], "fallthrough": true }],
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "CV_LOGIN_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 5, "period": 60 },
+      },
+    ],
+  },
   "workers_dev": true,
   "preview_urls": false,
   "routes": [{ "pattern": "avltree9798.co.uk", "custom_domain": true }],
   "compatibility_date": "2026-11-20",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/cv/*", "/cv/*", "/Anthony_Viriya_CV.pdf"],
     "not_found_handling": "404-page",
   },
 }

@@ -2,7 +2,7 @@
 
 ## Objective and acceptance
 
-Present Anthony's cybersecurity experience to collaborators and employers, with a restrained Japanese retro-game visual identity. Visitors can explore project categories and accessible project details, read career history, download the supplied CV and contact Anthony.
+Present Anthony's cybersecurity experience to collaborators and employers, with a restrained Japanese retro-game visual identity. Visitors can explore project categories and accessible project details, read career history, contact Anthony for CV access and contact Anthony.
 
 ## Architecture
 
@@ -22,4 +22,4 @@ Content and visitor tests → Vue presentation → responsive styling → GitOps
 
 ## Content and publishing additions
 
-The repository is public. GitHub Actions checks pull requests and deploys verified builds from `master`; manual Wrangler releases remain available. The custom domain is `avltree9798.co.uk`; the contact address is `me@avltree9798.co.uk`. Confidential project details must remain absent from the public site and generated CV. The original-format CV is generated from `src/content/cv.json` with overflow checks. Markdown posts live in `content/posts`; drafts are excluded from every production artefact, while published articles become static HTML with canonical metadata and sitemap entries.
+The repository is public. GitHub Actions checks pull requests and deploys verified builds from `master`; manual Wrangler releases remain available. The custom domain is `avltree9798.co.uk`; the contact address is `me@avltree9798.co.uk`. Confidential project details must remain absent from the public site and generated CV. The original-format CV is generated privately, outside the website assets, from `src/content/cv.json` with overflow checks. Markdown posts live in `content/posts`; drafts are excluded from every production artefact, while published articles become static HTML with canonical metadata and sitemap entries.

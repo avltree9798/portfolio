@@ -84,8 +84,6 @@ function closeProject() {
         <div class="hero-actions">
           <a class="button primary" href="#work"
             >See my work <span aria-hidden="true">＋</span></a
-          ><a class="button secondary" href="/Anthony_Viriya_CV.pdf" download
-            >Download CV <span aria-hidden="true">↓</span></a
           >
         </div>
         <div class="currently">
@@ -155,9 +153,6 @@ function closeProject() {
           Penetration testing first, then product security, detection
           engineering and security automation.
         </p>
-        <a href="/Anthony_Viriya_CV.pdf" download class="quiet-link"
-          >Full CV (PDF) <span aria-hidden="true">↓</span></a
-        >
       </div>
       <div class="timeline">
         <article v-for="job in portfolio.experience" :key="job.company">

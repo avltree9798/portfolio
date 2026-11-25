@@ -1,5 +1,3 @@
-import cv from './cv.json'
-
 export type Category =
   'All work' | 'Security engineering' | 'Open source' | 'Side projects'
 export interface Project {
@@ -26,11 +24,11 @@ export interface Project {
 // Content is the CMS. Edit this file in a pull request; merge to master to publish.
 // Career facts and project summaries are maintained alongside the generated CV.
 export const portfolio = {
-  name: cv.name,
+  name: 'Anthony Viriya',
   handle: 'avltree9798',
   role: 'Security Engineer',
   location: 'London, UK',
-  email: cv.email,
+  email: 'me@avltree9798.co.uk',
   github: 'https://github.com/avltree9798',
   linkedin: 'https://www.linkedin.com/in/anthony-viriya/',
   aviation: {

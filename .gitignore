@@ -11,3 +11,6 @@ playwright-report/
 # Generated from src/content/cv.json during development and builds.
 /public/Anthony_Viriya_CV.pdf
 /src/content/posts.generated.json
+
+# Locally generated private documents and link credentials.
+.private/

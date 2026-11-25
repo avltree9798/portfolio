@@ -1,0 +1,88 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #edebee;
+  background: #15151c;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 32px 20px;
+}
+main {
+  max-width: 520px;
+  margin: 7vh auto;
+}
+a {
+  color: #f49a8d;
+}
+h1 {
+  font-size: clamp(2rem, 8vw, 3rem);
+  margin: 12px 0;
+}
+p {
+  color: #bdb3c6;
+  line-height: 1.6;
+}
+.eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  margin-top: 48px;
+}
+label {
+  display: block;
+  margin: 24px 0 8px;
+  font-weight: 600;
+}
+input,
+select,
+button {
+  width: 100%;
+  min-height: 48px;
+  font: inherit;
+  border-radius: 6px;
+}
+input,
+select {
+  padding: 12px;
+  border: 1px solid #65505f;
+  background: #1c1c25;
+  color: #edebee;
+}
+button {
+  padding: 12px;
+  margin-top: 20px;
+  background: #f49a8d;
+  color: #15151c;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.secondary {
+  background: transparent;
+  color: #edebee;
+  border-color: #65505f;
+}
+#result {
+  border-top: 1px solid #65505f;
+  margin-top: 28px;
+}
+#status {
+  min-height: 24px;
+}
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid #f49a8d;
+  outline-offset: 4px;
+}
+[hidden] {
+  display: none !important;
+}

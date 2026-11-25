@@ -18,7 +18,7 @@ npm run dev
 ## Git is the CMS
 
 1. Edit `src/content/portfolio.ts` for projects, career history, skills and contact links. Project types catch missing fields at build time. Optional project URLs should point to verified, public repositories only.
-2. Edit `src/content/cv.json` when the CV changes. `npm run cv:generate` regenerates the public download using the original three-page Letter format and Source Sans 3 fonts. The PDF is generated automatically by development and production builds and is not stored in Git. Overflow fails the build rather than clipping content. Confidential project details are excluded from public content.
+2. Edit `src/content/cv.json` when the CV changes. `npm run cv:generate` generates a private local PDF in `.private/Anthony_Viriya_CV.pdf` using the original three-page Letter format and Source Sans 3 fonts. The PDF is generated automatically by development and production builds, but is excluded from Git and website assets. There is no public CV download. The CV source remains visible in this public repository. Overflow fails the build rather than clipping content. Confidential project details are excluded from public content.
 3. Open a pull request. GitHub Actions runs the quality gates and deployment dry run.
 4. Merge to `master`. the exact checked build is deployed to Cloudflare Workers.
 
@@ -66,3 +66,11 @@ Write ordinary **Markdown** here, including lists, links and fenced code blocks.
 Set `draft: false` to publish. The filename becomes `/blog/my-post/`. The repository itself is public, including draft Markdown files. Drafts are excluded from the website index, compiled assets, article pages and sitemap. `npm run dev` previews published posts at `/blog/`; restart it after adding or changing a post to refresh the homepage list. `npm run build` produces complete static HTML articles with canonical metadata and a sitemap. Raw HTML in Markdown is disabled, and unsafe link protocols are rejected. The included `hello-world.md` remains a private draft.
 
 For a manual release: edit content, run `npm run check` and `npm run test:e2e`, then `npx wrangler deploy` (the check command already builds the assets).
+
+## Owner-only CV links
+
+The website has no public CV download. Visit `/admin/` and sign in with the owner password to create a link valid for one hour, one day or seven days. Recipients do not need an account; anyone holding the link can download until it expires and can retain a downloaded copy. The page is not linked in public navigation.
+
+`CV_ADMIN_HASH` stores the SHA-256 digest of a randomly generated high-entropy owner password. `CV_LINK_KEY` signs separate, short-lived owner sessions and expiring download tokens. Both are Cloudflare Worker secrets, preserved across deployments and never embedded in the browser. Sessions use Secure, HttpOnly, SameSite=Strict cookies, mutations validate Origin, and sign-in attempts are rate limited. Changing `CV_LINK_KEY` revokes all existing sessions and download links.
+
+The generated PDF lives in ignored `.private/` and is bundled into the Worker, outside the public static assets. CI regenerates it in the deployment job rather than uploading it as a downloadable build artefact. Existing CV source in GitHub and historical public copies are not made private by this download control. Keep credentials outside this repository; do not put passwords in Markdown or GitHub source.

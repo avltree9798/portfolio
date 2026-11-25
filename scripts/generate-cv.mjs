@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test'
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 
 const escape = (value) =>
@@ -114,8 +114,11 @@ if (
     await readFile(new URL('../src/content/cv.json', import.meta.url), 'utf8'),
   )
   const pdf = await generateCv(cv)
-  const output = new URL('../public/Anthony_Viriya_CV.pdf', import.meta.url)
-  await mkdir(new URL('../public/', import.meta.url), { recursive: true })
+  const output = new URL('../.private/Anthony_Viriya_CV.pdf', import.meta.url)
+  await rm(new URL('../public/Anthony_Viriya_CV.pdf', import.meta.url), {
+    force: true,
+  })
+  await mkdir(new URL('../.private/', import.meta.url), { recursive: true })
   await writeFile(output, pdf)
   console.log(`Generated CV from repository content: ${pdf.length} bytes`)
 }
